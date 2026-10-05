@@ -1,12 +1,14 @@
 // ==UserScript==
 // @name         Notifications APC 204
 // @namespace    http://tampermonkey.net/
-// @version      20261005.6
+// @version      20261005.8
 // @description  Історія тривог, фільтри, налаштування, мови UK/RU та власні мелодії сповіщень.
 // @match        http://172.23.255.204/desktop/*
 // @updateURL    https://raw.githubusercontent.com/Ovolsan/Notifications-APC-204/main/Notifications%20APC%20204.user.js
 // @downloadURL  https://raw.githubusercontent.com/Ovolsan/Notifications-APC-204/main/Notifications%20APC%20204.user.js
 // @grant        GM_xmlhttpRequest
+// @grant        GM_notification
+// @grant        window.focus
 // @connect      raw.githubusercontent.com
 // ==/UserScript==
 
@@ -138,7 +140,21 @@
             "background_stopped": "зупинено",
             "backgroundTitle": "Робота у фоновій вкладці (Microsoft Edge)",
             "backgroundNote": "В Edge відкрийте Налаштування → Система та продуктивність → Продуктивність → «Завжди зберігати ці сайти активними» (у старих версіях — «Ніколи не переводити ці сайти в режим сну») та додайте http://172.23.255.204. Скрипт підтримує фонові таймери, але виняток із режиму сну задається у браузері.",
-            "closeInterface": "Закрити панель і кнопки"
+            "closeInterface": "Закрити панель і кнопки",
+            "notificationLabel": "Сповіщення",
+            "notification_manager": "готові (Tampermonkey)",
+            "notification_browser": "готові (браузер)",
+            "notification_sent": "надіслано — перевірте центр сповіщень",
+            "notification_permission": "потрібен дозвіл браузера",
+            "notification_denied": "заблоковані у браузері",
+            "notification_unavailable": "недоступні — оновіть скрипт у Tampermonkey",
+            "notification_failed": "не вдалося надіслати",
+            "notificationTestButton": "Тест сповіщення",
+            "notificationTestTitle": "APC 204 — тест сповіщення",
+            "notificationTestBody": "Системні сповіщення APC 204 працюють. Це тест, а не нова тривога.",
+            "notificationGuideTitle": "Системні сповіщення Windows",
+            "notificationGuideNote": "Натисніть «Тест сповіщення» в налаштуваннях скрипта. Сповіщення надсилає Tampermonkey. Якщо тесту не видно, у Windows відкрийте «Налаштування» → «Система» → «Сповіщення» (Windows 10: «Сповіщення та дії») та ввімкніть сповіщення й банери для вашого браузера. Перевірте, що «Не турбувати» або «Допомога у фокусуванні» вимкнені. Якщо Tampermonkey запитає дозвіл на системні сповіщення після оновлення скрипта, надайте його.",
+            "notificationActionsNote": "Натискання на сповіщення виводить вкладку APC 204 на передній план і зупиняє голос та мелодію. Кнопка закриття сповіщення лише зупиняє голос та мелодію, без перемикання вкладки."
         },
         "ru": {
             "tabHistory": "История тревог",
@@ -216,7 +232,21 @@
             "background_stopped": "остановлен",
             "backgroundTitle": "Работа в фоновой вкладке (Microsoft Edge)",
             "backgroundNote": "В Edge откройте Настройки → Система и производительность → Производительность → «Всегда сохранять эти сайты активными» (в старых версиях — «Никогда не переводить эти сайты в спящий режим») и добавьте http://172.23.255.204. Скрипт поддерживает фоновые таймеры, но исключение из сна задаётся в браузере.",
-            "closeInterface": "Закрыть панель и кнопки"
+            "closeInterface": "Закрыть панель и кнопки",
+            "notificationLabel": "Уведомления",
+            "notification_manager": "готовы (Tampermonkey)",
+            "notification_browser": "готовы (браузер)",
+            "notification_sent": "отправлено — проверьте центр уведомлений",
+            "notification_permission": "нужно разрешение браузера",
+            "notification_denied": "заблокированы в браузере",
+            "notification_unavailable": "недоступны — обновите скрипт в Tampermonkey",
+            "notification_failed": "не удалось отправить",
+            "notificationTestButton": "Тест уведомления",
+            "notificationTestTitle": "APC 204 — тест уведомления",
+            "notificationTestBody": "Системные уведомления APC 204 работают. Это тест, а не новая тревога.",
+            "notificationGuideTitle": "Системные уведомления Windows",
+            "notificationGuideNote": "Нажмите «Тест уведомления» в настройках скрипта. Уведомления отправляет Tampermonkey. Если теста не видно, в Windows откройте «Параметры» → «Система» → «Уведомления» (Windows 10: «Уведомления и действия») и включите уведомления и баннеры для вашего браузера. Проверьте, что «Не беспокоить» или «Фокусировка внимания» выключены. Если Tampermonkey запросит разрешение на системные уведомления после обновления скрипта, предоставьте его.",
+            "notificationActionsNote": "Нажатие на уведомление выводит вкладку APC 204 на передний план и останавливает голос и мелодию. Кнопка закрытия уведомления только останавливает голос и мелодию, без переключения вкладки."
         }
     };
 
@@ -534,6 +564,29 @@
         localStorage.removeItem('spa_alarm_sound_pending');
     }
 
+    function stopAlertSound() {
+        // Отменяем старые callbacks до cancel(): TTS может синхронно вызвать onend/onerror.
+        soundAttempt++;
+        clearTimeout(speechFallbackTimer);
+        speechFallbackTimer = null;
+        try {
+            stopCurrentAudio();
+        } catch (error) {
+            console.warn('[APC 204] Не удалось остановить мелодию:', error);
+        } finally {
+            currentAudio = null;
+        }
+        try {
+            window.speechSynthesis?.cancel();
+        } catch (error) {
+            console.warn('[APC 204] Не удалось остановить TTS:', error);
+        }
+        // Закрытая оператором тревога не должна повторно озвучиваться после клика или reload.
+        markSoundDelivered();
+        soundState = 'idle';
+        updateDebug();
+    }
+
     function reportSoundFailure(error) {
         soundState = 'blocked';
         console.warn('[APC 204 Reloader] Звук не запустился:', error);
@@ -670,19 +723,123 @@
         }
     }
 
-    // На HTTP системные уведомления могут быть недоступны; мониторинг работает дальше.
-    if (typeof window.Notification === 'function' && window.isSecureContext &&
-        Notification.permission === 'default') {
-        const requestNotifications = (event) => {
-            if (!event.isTrusted) return;
-            document.removeEventListener('click', requestNotifications);
+    // Системные уведомления отправляем через расширение, чтобы APC по HTTP тоже работал.
+    let systemNotificationState = null;
+    let notificationPermissionRequest = null;
+
+    function nativeNotificationPermission() {
+        try {
+            if (!window.isSecureContext || typeof window.Notification !== 'function') return 'unavailable';
+            return window.Notification.permission;
+        } catch (error) {
+            return 'unavailable';
+        }
+    }
+
+    function getSystemNotificationState() {
+        if (systemNotificationState) return systemNotificationState;
+        if (typeof GM_notification === 'function') return 'manager';
+        const permission = nativeNotificationPermission();
+        return permission === 'granted' ? 'browser' : permission === 'default' ? 'permission' : permission;
+    }
+
+    function setSystemNotificationState(state) {
+        systemNotificationState = state;
+        updateDebug();
+    }
+
+    function sendSystemNotification(title, text, tag) {
+        const onNotificationClick = event => {
+            event?.preventDefault?.();
+            stopAlertSound();
             try {
-                Promise.resolve(Notification.requestPermission()).catch(error => {
-                    console.warn('[APC 204 Reloader] Уведомления недоступны:', error);
+                // @grant window.focus выводит именно текущую вкладку APC и её окно на передний план.
+                const result = window.focus();
+                if (result && typeof result.then === 'function') Promise.resolve(result).catch(error => {
+                    console.warn('[APC 204] Не удалось вывести вкладку на передний план:', error);
                 });
             } catch (error) {
-                console.warn('[APC 204 Reloader] Уведомления недоступны:', error);
+                console.warn('[APC 204] Не удалось вывести вкладку на передний план:', error);
             }
+        };
+        const onNotificationClose = () => { stopAlertSound(); };
+        const sendNative = () => {
+            const permission = nativeNotificationPermission();
+            if (permission !== 'granted') {
+                setSystemNotificationState(permission === 'default' ? 'permission' : permission);
+                return false;
+            }
+            try {
+                const notification = new window.Notification(title, { body: text, tag, silent: true, requireInteraction: true });
+                notification.onclick = onNotificationClick;
+                notification.onclose = onNotificationClose;
+                setSystemNotificationState('sent');
+                return true;
+            } catch (error) {
+                console.warn('[APC 204] Не удалось отправить системное уведомление:', error);
+                setSystemNotificationState('failed');
+                return false;
+            }
+        };
+        const managerFailed = error => {
+            console.warn('[APC 204] Tampermonkey не отправил уведомление:', error);
+            if (!sendNative()) setSystemNotificationState('failed');
+        };
+
+        if (typeof GM_notification === 'function') {
+            try {
+                const result = GM_notification({ title, text, tag, silent: true, timeout: 0,
+                    highlight: false, onclick: onNotificationClick, ondone: onNotificationClose });
+                // Здесь подтверждается отправка запроса; показ баннера решает Windows.
+                setSystemNotificationState('sent');
+                if (result && typeof result.then === 'function') Promise.resolve(result).catch(managerFailed);
+                return true;
+            } catch (error) {
+                managerFailed(error);
+                return systemNotificationState === 'sent';
+            }
+        }
+        return sendNative();
+    }
+
+    function notifyAlarm(alarmId, alarm) {
+        sendSystemNotification(`${t('notifTitle')}: ${alarm.severity}`,
+            `${alarm.description}\nLabel: ${alarm.deviceLabel}\n${t('timeLabel')}: ${alarm.startTime}`,
+            `apc-204-${alarmId}-${alarm.parsedAt}`);
+    }
+
+    function requestNativeNotificationPermission() {
+        if (notificationPermissionRequest) return notificationPermissionRequest;
+        if (nativeNotificationPermission() !== 'default') return Promise.resolve();
+        try {
+            notificationPermissionRequest = Promise.resolve(window.Notification.requestPermission())
+                .then(() => { setSystemNotificationState(null); })
+                .catch(error => {
+                    console.warn('[APC 204] Разрешение на уведомления недоступно:', error);
+                    setSystemNotificationState('failed');
+                })
+                .finally(() => { notificationPermissionRequest = null; });
+            return notificationPermissionRequest;
+        } catch (error) {
+            console.warn('[APC 204] Разрешение на уведомления недоступно:', error);
+            setSystemNotificationState('failed');
+            return Promise.resolve();
+        }
+    }
+
+    async function testSystemNotification() {
+        if (typeof GM_notification !== 'function' && nativeNotificationPermission() === 'default') {
+            await requestNativeNotificationPermission();
+        }
+        sendSystemNotification(t('notificationTestTitle'), t('notificationTestBody'), `apc-204-test-${Date.now()}`);
+    }
+
+    // Резервный путь для защищённой страницы без API менеджера скриптов.
+    if (typeof GM_notification !== 'function' && nativeNotificationPermission() === 'default') {
+        const requestNotifications = event => {
+            if (!event.isTrusted) return;
+            document.removeEventListener('click', requestNotifications);
+            void requestNativeNotificationPermission();
         };
         document.addEventListener('click', requestNotifications);
     }
@@ -825,6 +982,7 @@
 
     function updateDebug() {
         const backgroundText = `${t('backgroundLabel')}: ${t('background_' + backgroundState)}`;
+        const notificationText = `${t('notificationLabel')}: ${t('notification_' + getSystemNotificationState())}`;
         const minutes = Math.floor(Math.max(0, timeLeft) / 60);
         const seconds = Math.floor(Math.max(0, timeLeft) % 60);
         const unreadCount = getUnreadCount();
@@ -832,7 +990,7 @@
         let statusText = `${t('timerText')}: ${minutes}:${seconds.toString().padStart(2, '0')} | ${timerPaused ? t('paused') : t('running')}`;
         if (unreadCount > 0) statusText += ` | ${t('newAlarms')}: ${unreadCount}`;
         if (soundState !== 'idle') statusText += ` | ${t('soundLabel')}: ${t('sound_' + soundState)}`;
-        timerBtn.title = `${statusText}\n${isNightMode ? t('nightMode') : t('dayMode')}\n${t('debugTooltip')}\n${backgroundText}`;
+        timerBtn.title = `${statusText}\n${isNightMode ? t('nightMode') : t('dayMode')}\n${t('debugTooltip')}\n${backgroundText}\n${notificationText}`;
         timerBtn.setAttribute('aria-label', timerBtn.title);
         timerBtn.setAttribute('aria-pressed', String(isNightMode));
         timerBtn.dataset.paused = String(timerPaused);
@@ -845,6 +1003,8 @@
         modal.style.width = activeTab === 'history' ? '760px' : activeTab === 'rules' ? '640px' : '468px';
         const statusLine = document.querySelector('#apc-settings-status');
         if (statusLine) statusLine.textContent = backgroundText + (soundState !== 'idle' ? ` | ${t('soundLabel')}: ${t('sound_' + soundState)}` : '');
+        const notificationStatus = document.querySelector('#apc-notification-status');
+        if (notificationStatus) notificationStatus.textContent = notificationText;
         updateHeaderLabels();
         updateDockVisibility();
     }
@@ -950,6 +1110,9 @@
             guide.innerHTML = section(t('firefoxSoundTitle'), t('chromeSoundNote'), 'chrome://settings/content/sound') +
                 section(t('memoryTitle'), t('chromeMemoryNote'), 'chrome://settings/performance');
         }
+        guide.innerHTML += `<h4 style="margin:4px 0; color:#ffcc80;">${htmlT('notificationGuideTitle')}</h4>` +
+            `<p style="line-height:1.5; margin:0;">${htmlT('notificationActionsNote')}</p>` +
+            `<p style="line-height:1.5; margin:0;">${htmlT('notificationGuideNote')}</p>`;
         guide.innerHTML += `<h4 style="margin:4px 0;">${htmlT('siteAddress')}</h4>` +
             copyAddressRow('http://172.23.255.204') + `<p style="color:#aaa; line-height:1.5; margin:0;">${htmlT('permissionsAfter')}</p>`;
         guide.querySelectorAll('[data-copy-address]').forEach(button => {
@@ -1051,6 +1214,10 @@
                         <button type="button" data-permission-browser="firefox" style="${btnActionStyle}">${htmlT('permissionsFirefox')}</button>
                         <button type="button" data-permission-browser="chrome" style="${btnActionStyle}">${htmlT('permissionsChrome')}</button>
                     </div>
+                    <div style="display:flex; align-items:center; flex-wrap:wrap; gap:4px; margin-top:4px;">
+                        <button type="button" id="apc-test-notification" style="${btnActionStyle}">${htmlT('notificationTestButton')}</button>
+                        <span id="apc-notification-status" role="status" style="color:#aaa; font-size:12px; overflow-wrap:anywhere;"></span>
+                    </div>
                     <div id="apc-permission-guide" style="display:none; margin:0; padding:0; border:0;"></div>
                 </div>
                 <!-- Язык -->
@@ -1100,6 +1267,7 @@
                 };
             });
             renderPermissionGuide();
+            settingsDiv.querySelector('#apc-test-notification').onclick = () => { void testSystemNotification(); };
 
             // Обработка языка
             settingsDiv.querySelector('#langRu').onclick = () => {
@@ -1308,9 +1476,7 @@
 
                     if (!isMuted(deviceLabel, description)) {
                         hasNewUnmutedAlarm = true;
-                        if (typeof window.Notification === 'function' && Notification.permission === "granted") {
-                            new Notification(`${t('notifTitle')}: ${severity}`, { body: `${description}\nLabel: ${deviceLabel}\n${t('timeLabel')}: ${startTime}`, requireInteraction: true });
-                        }
+                        notifyAlarm(alarmId, alarmData);
                     }
                 } catch (err) {
                     console.error('[SPA Reloader] Ошибка парсинга строки:', err);

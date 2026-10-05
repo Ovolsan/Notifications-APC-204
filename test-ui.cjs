@@ -42,6 +42,7 @@ async function main() {
             localStorage.setItem('spa_snd_std', 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=');
             window.RTCPeerConnection = undefined;
             window.GM_xmlhttpRequest = options => queueMicrotask(options.onerror);
+            window.GM_notification = () => {}; // Model the notification API supplied by Tampermonkey.
             window.Notification = undefined;
             window.copiedValues = [];
             Object.defineProperty(navigator, 'clipboard', { value: { writeText: async value => copiedValues.push(value) }, configurable: true });
@@ -290,6 +291,7 @@ async function main() {
             window.RTCPeerConnection = undefined;
             window.Notification = undefined;
             window.GM_xmlhttpRequest = options => queueMicrotask(options.onerror);
+            window.GM_notification = () => {}; // Model the notification API supplied by Tampermonkey.
         });
         await touch.addScriptTag({ content: source });
         assert.equal(await touch.locator('#apc-navigation').getAttribute('aria-hidden'), 'false');
