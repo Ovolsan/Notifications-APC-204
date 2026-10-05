@@ -4,7 +4,7 @@ const http = require('node:http');
 const path = require('node:path');
 const { chromium } = require('C:/Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
 
-const source = fs.readFileSync(path.join(__dirname, 'APC-204-Alarm-Reloader.user.js'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, 'Notifications APC 204.user.js'), 'utf8');
 // Test hooks are added only to the in-memory test copy, never to the delivered script.
 const instrumented = source.replace(/\}\)\(\);\s*$/, `
     window.apcTest = {
@@ -22,6 +22,7 @@ const html = `<!doctype html><meta charset="utf-8"><title>APC isolated test</tit
 <button id="operator">Operator action</button><div id="rows"></div>
 <script>
 window.testPeers = [];
+window.GM_xmlhttpRequest = options => queueMicrotask(options.onerror);
 const NativeRTC = window.RTCPeerConnection;
 window.RTCPeerConnection = class extends NativeRTC {
   constructor(config) { super(config); window.testPeers.push(this); }
