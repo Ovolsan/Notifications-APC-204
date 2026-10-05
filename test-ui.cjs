@@ -9,7 +9,8 @@ async function main() {
         .replace(/\}\)\(\);\s*$/, `
     window.apcUiTest = {
         setHistory(value) { alarmsCache = value; activeTab = 'history'; renderModal(); },
-        setRules(value) { muteRules = value; activeTab = 'rules'; renderModal(); }
+        setRules(value) { muteRules = value; activeTab = 'rules'; renderModal(); },
+        pause(value) { clearTimeout(idleTimeout); isPaused = value; updateDebug(); }
     };
 })();`);
     const server = http.createServer((req, res) => {
@@ -18,7 +19,7 @@ async function main() {
         res.end(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>APC UI fixture</title>
             <style>html,body{overflow:hidden}body{background:#181a1b}table{font-size:18px;table-layout:fixed}
             td{word-break:break-all;overflow-wrap:anywhere}button{white-space:normal;font-size:16px;line-height:1.5;padding:10px 20px}</style>
-            <body><h1 style="color:#ddd">APC test page</h1></body>`);
+            <body><h1 style="color:#ddd">APC test page</h1><button id="operator">Operator</button></body>`);
     });
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     let browser;
@@ -46,16 +47,111 @@ async function main() {
             Object.defineProperty(navigator, 'clipboard', { value: { writeText: async value => copiedValues.push(value) }, configurable: true });
         });
         await page.addScriptTag({ content: source });
-        assert.match(await page.locator('#apc-timer-btn').textContent(), /🔄 [45]:\d{2}/);
+        assert.match(await page.locator('#apc-timer-btn').getAttribute('title'), /Таймер: [45]:\d{2}/);
+        assert.equal(await page.locator('#apc-timer-btn').getAttribute('data-paused'), 'false');
         assert.match(await page.locator('#apc-history-btn').textContent(), /Історія/);
         assert.equal(await page.locator('#apc-settings-panel').isVisible(), false);
         assert.equal(await page.locator('#apc-settings-btn').isVisible(), false);
         const closed = await page.locator('#apc-monitor-widget').boundingBox();
-        assert(closed.x < 3 && closed.y > 800);
+        assert.equal(closed.x, 0);
+        assert.equal(closed.y + closed.height, 900);
+        assert.equal(closed.width, 48);
+        assert.equal(await page.locator('.apc-eye-open').first().evaluate(element => getComputedStyle(element).animationDuration), '8s');
+        // Check actual SVG geometry at animation phases, rather than only the CSS name.
+        const poses = await page.evaluate(async () => {
+            const svg = document.querySelector('.apc-timer-eyes');
+            const animations = svg.getAnimations({ subtree: true });
+            for (const animation of animations) { animation.pause(); animation.currentTime = 0; }
+            const frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+            const measure = () => ({
+                eyes: Array.from(svg.querySelectorAll('.apc-eye-open')).map(eye => {
+                    const white = eye.querySelector('ellipse').getBoundingClientRect();
+                    const pupil = eye.querySelector('.apc-eye-pupil').getBoundingClientRect();
+                    return { height: white.height, offset: pupil.x + pupil.width / 2 - white.x - white.width / 2 };
+                }),
+                lidOpacity: Number(getComputedStyle(svg.querySelector('.apc-eye-closed')).opacity)
+            });
+            const pose = async (look, blink) => {
+                for (const animation of animations) {
+                    animation.currentTime = animation.animationName === 'apc-eye-look' ? look : blink;
+                }
+                await frame();
+                return measure();
+            };
+            const center = await pose(0, 0);
+            const left = await pose(4000, 0);
+            const right = await pose(8400, 0);
+            const blink = await pose(0, 1200);
+            const reopened = await pose(0, 1600);
+            await pose(0, 0);
+            return { center, left, right, blink, reopened };
+        });
+        for (const eye of poses.center.eyes) assert(Math.abs(eye.offset) < .1);
+        for (const eye of poses.left.eyes) assert(eye.offset < -1.9);
+        for (const eye of poses.right.eyes) assert(eye.offset > 1.9);
+        assert(Math.abs(poses.left.eyes[0].offset - poses.left.eyes[1].offset) < .1);
+        assert(Math.abs(poses.right.eyes[0].offset - poses.right.eyes[1].offset) < .1);
+        for (let i = 0; i < 2; i++) {
+            assert(poses.blink.eyes[i].height < poses.center.eyes[i].height * .05);
+            assert(Math.abs(poses.reopened.eyes[i].height - poses.center.eyes[i].height) < .1);
+        }
+        assert.equal(poses.blink.lidOpacity, 1);
+        assert.equal(poses.reopened.lidOpacity, 0);
         await page.locator('#apc-monitor-widget').screenshot({ path: path.join(__dirname, 'preview-timer.png') });
-        ok('Five-minute timer starts in Ukrainian at the bottom left');
+        await page.evaluate(() => {
+            for (const animation of document.querySelector('.apc-timer-eyes').getAnimations({ subtree: true })) animation.play();
+        });
+        await page.waitForTimeout(250);
+        assert.equal(await page.evaluate(() => document.querySelector('.apc-timer-eyes').getAnimations({ subtree: true })
+            .every(animation => animation.playState === 'running' && animation.currentTime > 100)), true);
+        ok('Pupils stay centered or move together left and right; eyelids close completely, reopen and animate in real time');
+        await page.evaluate(() => apcUiTest.pause(true));
+        assert.equal(await page.locator('.apc-eye-closed').evaluate(element => getComputedStyle(element).opacity), '1');
+        assert.equal(await page.locator('.apc-eye-open').first().evaluate(element => getComputedStyle(element).animationName), 'none');
+        assert.equal(await page.locator('.apc-eye-pupil').first().evaluate(element => getComputedStyle(element).animationName), 'none');
+        await page.evaluate(() => apcUiTest.pause(false));
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        assert.equal(await page.evaluate(() => matchMedia('(prefers-reduced-motion:reduce)').matches), true);
+        assert.equal(await page.locator('.apc-eye-open').first().evaluate(element => getComputedStyle(element).animationName), 'apc-eye-blink');
+        assert.equal(await page.locator('.apc-eye-pupil').first().evaluate(element => getComputedStyle(element).animationName), 'apc-eye-look');
+        assert.equal(await page.evaluate(() => document.querySelector('.apc-timer-eyes').getAnimations({ subtree: true }).length), 5);
+        // Observe real animation frames, without setting currentTime or advancing a test clock.
+        await page.waitForFunction(() => {
+            const eye = document.querySelector('.apc-eye-open > ellipse');
+            return eye.getBoundingClientRect().height < 1;
+        }, null, { timeout: 3000 });
+        await page.waitForFunction(() => {
+            const eye = document.querySelector('.apc-eye-open');
+            const white = eye.querySelector('ellipse').getBoundingClientRect();
+            const pupil = eye.querySelector('.apc-eye-pupil').getBoundingClientRect();
+            return white.height > 13 && pupil.x + pupil.width / 2 - white.x - white.width / 2 < -1.2;
+        }, null, { timeout: 5000 });
+        assert.equal(await page.locator('#apc-control-dock').evaluate(element => getComputedStyle(element.querySelector('.apc-navigation')).transitionDuration), '0.28s, 0.2s, 0.28s, 0s');
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
+        ok('Real blinking and gaze movement remain visible with reduced motion enabled; navigation retains its slide animation');
 
+        await page.hover('#apc-timer-btn');
+        await page.waitForFunction(() => getComputedStyle(document.querySelector('.apc-mode-overlay')).opacity === '1');
+        assert.equal(await page.locator('#apc-navigation').getAttribute('aria-hidden'), 'false');
+        assert.equal(await page.locator('#apc-timer-btn').getAttribute('aria-pressed'), 'false');
+        assert.equal(await page.locator('.apc-sun-icon').isVisible(), true);
+        assert.equal(await page.locator('.apc-moon-icon').isVisible(), false);
+        assert.equal(await page.locator('.apc-sound-warning').isVisible(), false);
         await page.click('#apc-timer-btn');
+        assert.equal(await page.locator('#apc-timer-btn').getAttribute('aria-pressed'), 'true');
+        assert.equal(await page.evaluate(() => localStorage.spa_night_mode), 'true');
+        assert.equal(await page.locator('.apc-sun-icon').isVisible(), false);
+        assert.equal(await page.locator('.apc-moon-icon').isVisible(), true);
+        assert.equal(await page.locator('#apc-settings-panel').isVisible(), false);
+        await page.click('#apc-timer-btn');
+        assert.equal(await page.evaluate(() => localStorage.spa_night_mode), 'false');
+        await page.waitForFunction(() => document.querySelector('#apc-navigation').getBoundingClientRect().width === 108);
+        await page.locator('#apc-monitor-widget').screenshot({ path: path.join(__dirname, 'preview-timer-hover.png') });
+        ok('Hover reveals the current sound mode and sliding navigation; eye clicks switch mode without opening a panel');
+
+        await page.click('#apc-history-btn');
+        assert.equal(await page.locator('#apc-history-btn').getAttribute('data-current'), 'true');
+        assert.match(await page.locator('#apc-history-btn').getAttribute('title'), /Закрити панель і кнопки/);
         assert.deepEqual(await page.locator('#apc-settings-panel tbody tr td:nth-child(2)').allTextContents(), ['Old UPS', 'Middle UPS', 'New UPS']);
         assert.equal((await page.locator('#apc-settings-panel').boundingBox()).width, 760);
         await page.click('#apc-rules-btn');
@@ -145,6 +241,7 @@ async function main() {
         assert.equal(await page.evaluate(() => window.scrollY), 0);
         assert.equal(await page.evaluate(() => getComputedStyle(document.body).overflowY), 'hidden');
         assert.equal(await page.locator('#apc-timer-btn').isVisible(), true);
+        await page.click('#apc-rules-btn');
         await page.click('#apc-history-btn');
         assert(await page.locator('#apc-settings-panel').evaluate(element => element.scrollHeight - element.scrollTop - element.clientHeight < 2));
         ok('Realistic history keeps date, Label and hide buttons on one line and scrolls inside the viewport');
@@ -168,10 +265,40 @@ async function main() {
         await page.locator('.ignore-btn').last().scrollIntoViewIfNeeded();
         assert.equal(await page.evaluate(() => window.scrollY), 0);
         await singleLine('.ignore-btn');
-        await page.click('#apc-timer-btn');
+        await page.click('#apc-history-btn');
         assert.equal(await page.locator('#apc-settings-panel').isVisible(), false);
-        assert.equal(await page.locator('#apc-mode-btn').isVisible(), false);
-        assert.equal(await page.locator('#apc-timer-btn').getAttribute('aria-expanded'), 'false');
+        assert.equal(await page.locator('#apc-navigation').getAttribute('aria-hidden'), 'true');
+        assert.equal(await page.locator('#apc-timer-btn').getAttribute('aria-pressed'), 'false');
+        await page.mouse.move(250, 100);
+        await page.click('#operator');
+        await page.keyboard.press('Tab');
+        assert.equal(await page.evaluate(() => document.activeElement.id), 'apc-timer-btn');
+        assert.equal(await page.locator('#apc-navigation').getAttribute('aria-hidden'), 'false');
+        await page.keyboard.press('Tab');
+        await page.keyboard.press('Enter');
+        assert.equal(await page.locator('#apc-settings-panel').isVisible(), true);
+        await page.click('#apc-settings-btn');
+        await page.locator('#langUk').press('Escape');
+        assert.equal(await page.locator('#apc-settings-panel').isVisible(), false);
+        assert.equal(await page.locator('#apc-navigation').getAttribute('aria-hidden'), 'true');
+        assert.equal(await page.evaluate(() => document.activeElement.id), 'apc-timer-btn');
+        ok('The active section closes the whole panel and dock; keyboard entry and Escape work');
+        const touch = await browser.newPage({ viewport: { width: 390, height: 600 }, isMobile: true, hasTouch: true });
+        touch.on('pageerror', error => errors.push(error.message));
+        await touch.goto(`http://127.0.0.1:${server.address().port}/#deviceGroups`);
+        await touch.evaluate(() => {
+            window.RTCPeerConnection = undefined;
+            window.Notification = undefined;
+            window.GM_xmlhttpRequest = options => queueMicrotask(options.onerror);
+        });
+        await touch.addScriptTag({ content: source });
+        assert.equal(await touch.locator('#apc-navigation').getAttribute('aria-hidden'), 'false');
+        await touch.locator('#apc-history-btn').tap();
+        assert.equal(await touch.locator('#apc-settings-panel').isVisible(), true);
+        await touch.locator('#apc-history-btn').tap();
+        assert.equal(await touch.locator('#apc-settings-panel').isVisible(), false);
+        await touch.close();
+        ok('Touch screens expose section buttons without requiring hover');
         assert.deepEqual(errors, []);
         ok('Small windows contain the entire widget, scroll tables horizontally and keep close controls usable');
         console.log(JSON.stringify({ passed, errors }, null, 2));

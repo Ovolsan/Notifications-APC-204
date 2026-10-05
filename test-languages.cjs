@@ -83,7 +83,7 @@ async function main() {
         await respond(page, 0, 200, { historyButton: 'Remote history', ignorePrompt: 'Label={0}', permissionsTitle: '<img src=x onerror="window.injected=true">', extraUnknownKey: 'ignored' });
         await page.waitForFunction(() => document.querySelector('#apc-history-btn').textContent === 'Remote history');
         assert.equal(await page.evaluate(() => apcLanguageTest.translate('ignorePrompt', 'UPS-37')), 'Label=UPS-37');
-        await page.click('#apc-timer-btn');
+        await page.hover('#apc-timer-btn');
         await page.click('#apc-settings-btn');
         assert.equal(await page.locator('#apc-settings-panel img').count(), 0);
         assert.equal(await page.evaluate(() => window.injected), undefined);
@@ -113,7 +113,7 @@ async function main() {
         ok('Corrupt cache, malformed JSON, invalid types, unsupported locale and timeout keep built-in translations');
 
         const race = await fixture();
-        await race.click('#apc-timer-btn');
+        await race.hover('#apc-timer-btn');
         await race.click('#apc-settings-btn');
         await race.click('#langUk');
         await race.click('#langRu');
@@ -121,7 +121,7 @@ async function main() {
         assert.equal(await race.evaluate(() => languageRequests.length), 2);
         await respond(race, 1, 200, { ...packs.uk, settingsButton: 'UK remote settings' });
         await respond(race, 0, 200, { ...packs.ru, settingsButton: 'RU remote settings' });
-        assert.equal(await race.locator('#apc-settings-btn').textContent(), 'UK remote settings');
+        assert.match(await race.locator('#apc-settings-btn').getAttribute('title'), /UK remote settings/);
         assert.equal(await race.evaluate(() => apcLanguageTest.state().currentLang), 'uk');
         assert.equal(await race.evaluate(() => localStorage.spa_lang), 'uk');
         ok('Fast language switching and late responses preserve the latest selection');

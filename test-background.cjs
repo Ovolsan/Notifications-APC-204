@@ -10,10 +10,10 @@ const instrumented = source.replace(/\}\)\(\);\s*$/, `
     window.apcTest = {
         parse: checkAndParseAlarms,
         guard: backgroundGuard,
-        state: () => ({ isPaused, isParsingAlarms, timeLeft, lastActivity, backgroundState, soundState,
+        state: () => ({ isPaused, isModalOpen, isParsingAlarms, timeLeft, lastActivity, backgroundState, soundState,
             alarms: Object.keys(alarmsCache) }),
         idle: () => { isPaused = false; isModalOpen = false; lastActivity = Date.now() - 20000; },
-        menu: value => { isModalOpen = value; },
+        menu: value => { isModalOpen = value; updateDebug(); },
         time: value => { timeLeft = value; lastTick = Date.now(); }
     };
 })();`);
@@ -111,24 +111,57 @@ async function main() {
             await apcTest.parse();
         });
         assert.equal((await page.evaluate(() => apcTest.state())).alarms.length, 3);
-        ok('Hidden-tab monitoring continues even if the script menu was left open');
+        await page.evaluate(() => apcTest.time(100));
+        await page.waitForTimeout(1200);
+        assert((await page.evaluate(() => apcTest.state())).timeLeft < 100);
+        ok('Hidden-tab monitoring and countdown continue with the script panel left open');
 
-        await page.evaluate(async () => {
+        await page.evaluate(() => {
             testHidden = false;
             document.dispatchEvent(new Event('visibilitychange'));
+            window.dispatchEvent(new Event('focus'));
+        });
+        await page.click('#apc-settings-btn');
+        await page.evaluate(async () => {
             apcTest.time(100);
             addAlarm('alarm4');
             await apcTest.parse();
         });
+        assert.equal((await page.evaluate(() => apcTest.state())).isPaused, true);
         assert.equal((await page.evaluate(() => apcTest.state())).alarms.length, 3);
-        // Wait for actual timer ticks, then verify a visible menu is respected.
         await page.waitForTimeout(1200);
         assert.equal((await page.evaluate(() => apcTest.state())).timeLeft, 100);
-        assert.equal(await page.locator('#apc-timer-btn').getAttribute('aria-expanded'), 'true');
-        ok('Visible menu pauses both parsing and reload countdown');
+        await page.waitForFunction(() => !apcTest.state().isPaused, null, { timeout: 12000 });
+        // Automatic monitoring, with no call to the parsing hook, must find this alarm.
+        await page.waitForFunction(() => apcTest.state().alarms.includes('alarm4'), null, { timeout: 5000 });
+        await page.waitForTimeout(1200);
+        state = await page.evaluate(() => apcTest.state());
+        assert(state.timeLeft < 220 && state.timeLeft > 200);
+        assert.equal(state.isModalOpen, true);
+        assert.equal(await page.locator('#apc-settings-panel').isVisible(), true);
+        assert.equal(await page.locator('#apc-timer-btn').getAttribute('data-paused'), 'false');
+        ok('Open foreground panel resumes countdown and automatically detects alarms after ten idle seconds');
+
+        await page.click('#operator');
+        await page.evaluate(async () => {
+            apcTest.time(100);
+            addAlarm('visibleBlurAlarm');
+            window.dispatchEvent(new Event('blur'));
+            await apcTest.parse();
+        });
+        assert.equal(await page.evaluate(() => document.hidden), false);
+        state = await page.evaluate(() => apcTest.state());
+        assert.equal(state.isPaused, false);
+        assert.equal(state.isModalOpen, true);
+        assert(state.alarms.includes('visibleBlurAlarm'));
+        await page.waitForTimeout(1200);
+        assert((await page.evaluate(() => apcTest.state())).timeLeft < 220);
+        assert.equal(await page.locator('#apc-timer-btn').getAttribute('data-paused'), 'false');
+        ok('Switching to another window resumes monitoring and countdown even while the tab remains visible');
 
         await page.evaluate(() => {
             apcTest.idle();
+            addAlarm('partialSaved');
             addAlarm('alarm5');
             window.partialParse = apcTest.parse();
         });
@@ -139,7 +172,7 @@ async function main() {
             stored: Object.keys(JSON.parse(localStorage.spa_alarms_cache)),
             parsing: apcTest.state().isParsingAlarms
         }));
-        assert(partial.stored.includes('alarm4'));
+        assert(partial.stored.includes('partialSaved'));
         assert(!partial.stored.includes('alarm5'));
         assert.equal(partial.parsing, false);
         ok('Real user interruption preserves alarms already processed');
@@ -170,10 +203,10 @@ async function main() {
         assert.equal((await fallback.evaluate(() => apcTest.state())).alarms.length, 2);
         ok('Unavailable WebRTC does not break monitoring and is reported in the indicator');
 
-        await fallback.evaluate(() => { apcTest.idle(); apcTest.time(0); });
+        await fallback.evaluate(() => { apcTest.idle(); apcTest.menu(true); apcTest.time(0); });
         await fallback.waitForEvent('load', { timeout: 4000 });
         assert.equal(await fallback.evaluate(() => typeof window.apcTest), 'undefined');
-        ok('Expired reload countdown reloads the target page');
+        ok('Expired countdown reloads the target page even with the panel open');
 
         const soundPage = await browser.newPage();
         soundPage.on('pageerror', e => errors.push(e.message));
@@ -218,7 +251,7 @@ async function main() {
         });
         await soundPage.waitForFunction(() => apcTest.state().soundState === 'blocked');
         assert.equal(await soundPage.evaluate(() => localStorage.spa_alarm_sound_pending), 'true');
-        assert.equal(await soundPage.evaluate(() => document.body.textContent.includes('не запустився')), true);
+        assert.equal(await soundPage.evaluate(() => document.querySelector('#apc-timer-btn').title.includes('не запустився') && !document.querySelector('.apc-sound-warning').hasAttribute('hidden')), true);
         ok('Autoplay rejection is shown and keeps the alarm pending');
 
         await soundPage.reload();

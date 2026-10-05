@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Notifications APC 204
 // @namespace    http://tampermonkey.net/
-// @version      20261005.3
+// @version      20261005.6
 // @description  Історія тривог, фільтри, налаштування, мови UK/RU та власні мелодії сповіщень.
 // @match        http://172.23.255.204/desktop/*
 // @updateURL    https://raw.githubusercontent.com/Ovolsan/Notifications-APC-204/main/Notifications%20APC%20204.user.js
@@ -88,7 +88,7 @@
             "dayMode": "☀️ День (Стандарт)",
             "nightMode": "🌙 Ніч (AFK-мелодія)",
             "close": "Закрити [X]",
-            "debugTooltip": "Клікни, щоб відкрити Історію, Фільтри та Налаштування",
+            "debugTooltip": "Наведіть курсор, щоб показати кнопки. Натисніть на очі, щоб змінити режим звуку.",
             "timerStopped": "Таймер зупинено (Відкрито меню)",
             "timerText": "Таймер",
             "paused": "ПАУЗА",
@@ -110,9 +110,9 @@
             "unknown": "Невідомо",
             "langTitle": "Мова інтерфейсу / Язык интерфейса",
             "stdSoundTitle": "Стандартна мелодія (Денний режим)",
-            "stdSoundDesc": "TTS \"Батареї\" + ця мелодія.",
+            "stdSoundDesc": "TTS \"Батарея ЗК-1\" + ця мелодія.",
             "afkSoundTitle": "AFK Мелодія (Нічний режим)",
-            "afkSoundDesc": "TTS \"Батареї\" + ця мелодія (якщо увімкнено 🌙).",
+            "afkSoundDesc": "TTS \"Батарея ЗК-1\" + ця мелодія (якщо увімкнено 🌙).",
             "testBtn": "Тест",
             "soundNote": "Файли до 2 МБ. Звук зупиняється кліком по сторінці.",
             "fileSizeError": "Файл >2 МБ!",
@@ -137,7 +137,8 @@
             "background_unavailable": "захист недоступний",
             "background_stopped": "зупинено",
             "backgroundTitle": "Робота у фоновій вкладці (Microsoft Edge)",
-            "backgroundNote": "В Edge відкрийте Налаштування → Система та продуктивність → Продуктивність → «Завжди зберігати ці сайти активними» (у старих версіях — «Ніколи не переводити ці сайти в режим сну») та додайте http://172.23.255.204. Скрипт підтримує фонові таймери, але виняток із режиму сну задається у браузері."
+            "backgroundNote": "В Edge відкрийте Налаштування → Система та продуктивність → Продуктивність → «Завжди зберігати ці сайти активними» (у старих версіях — «Ніколи не переводити ці сайти в режим сну») та додайте http://172.23.255.204. Скрипт підтримує фонові таймери, але виняток із режиму сну задається у браузері.",
+            "closeInterface": "Закрити панель і кнопки"
         },
         "ru": {
             "tabHistory": "История тревог",
@@ -165,7 +166,7 @@
             "dayMode": "☀️ День (Стандарт)",
             "nightMode": "🌙 Ночь (AFK-мелодия)",
             "close": "Закрыть [X]",
-            "debugTooltip": "Кликни, чтобы открыть Историю, Фильтры и Настройки",
+            "debugTooltip": "Наведите курсор, чтобы показать кнопки. Нажмите на глаза, чтобы сменить режим звука.",
             "timerStopped": "Таймер остановлен (Открыто меню)",
             "timerText": "Таймер",
             "paused": "ПАУЗА",
@@ -187,9 +188,9 @@
             "unknown": "Неизвестно",
             "langTitle": "Мова інтерфейсу / Язык интерфейса",
             "stdSoundTitle": "Стандартная мелодия (Дневной режим)",
-            "stdSoundDesc": "TTS \"Батареи\" + эта мелодия.",
+            "stdSoundDesc": "TTS \"Батарея ЗК-1\" + эта мелодия.",
             "afkSoundTitle": "AFK Мелодия (Ночной режим)",
-            "afkSoundDesc": "TTS \"Батареи\" + эта мелодия (если включён 🌙).",
+            "afkSoundDesc": "TTS \"Батарея ЗК-1\" + эта мелодия (если включён 🌙).",
             "testBtn": "Тест",
             "soundNote": "Файлы до 2 МБ. Звук останавливается кликом по странице.",
             "fileSizeError": "Файл >2 МБ!",
@@ -214,7 +215,8 @@
             "background_unavailable": "защита недоступна",
             "background_stopped": "остановлен",
             "backgroundTitle": "Работа в фоновой вкладке (Microsoft Edge)",
-            "backgroundNote": "В Edge откройте Настройки → Система и производительность → Производительность → «Всегда сохранять эти сайты активными» (в старых версиях — «Никогда не переводить эти сайты в спящий режим») и добавьте http://172.23.255.204. Скрипт поддерживает фоновые таймеры, но исключение из сна задаётся в браузере."
+            "backgroundNote": "В Edge откройте Настройки → Система и производительность → Производительность → «Всегда сохранять эти сайты активными» (в старых версиях — «Никогда не переводить эти сайты в спящий режим») и добавьте http://172.23.255.204. Скрипт поддерживает фоновые таймеры, но исключение из сна задаётся в браузере.",
+            "closeInterface": "Закрыть панель и кнопки"
         }
     };
 
@@ -236,8 +238,12 @@
                 throw new Error('Invalid translation: ' + key);
             }
             // Старый кеш и ещё не обновлённый JSON не возвращают русский заголовок первым.
-            translations[key] = key === 'langTitle' && value === 'Язык интерфейса / Мова інтерфейсу'
-                ? fallbackI18n[lang].langTitle : value;
+            const legacyTooltip = key === 'debugTooltip' && [
+                'Кликни, чтобы открыть Историю, Фильтры и Настройки',
+                'Клікни, щоб відкрити Історію, Фільтри та Налаштування'
+            ].includes(value);
+            const legacyHeading = key === 'langTitle' && value === 'Язык интерфейса / Мова інтерфейсу';
+            translations[key] = legacyTooltip || legacyHeading ? fallbackI18n[lang][key] : value;
         }
         if (!Object.keys(translations).length) throw new Error('Empty language JSON');
         return translations;
@@ -602,7 +608,7 @@
                 return;
             }
             speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance('Батареї');
+            const utterance = new SpeechSynthesisUtterance('Батарея ЗК-1');
             utterance.lang = currentLang === 'uk' ? 'uk-UA' : 'ru-RU';
             utterance.rate = 0.8;
             utterance.volume = 1;
@@ -681,82 +687,166 @@
         document.addEventListener('click', requestNotifications);
     }
 
-    // --- UI ТАЙМЕРА ---
+    // --- КНОПКА СОСТОЯНИЯ И ВЫЕЗЖАЮЩЕЕ МЕНЮ ---
+    const uiStyle = document.createElement('style');
+    uiStyle.textContent = `
+        #apc-monitor-widget [hidden] { display:none !important; }
+        #apc-monitor-widget .apc-dock { display:flex; flex:0 0 auto; align-items:stretch; gap:0; padding:0; margin:0; height:32px; max-width:100%; }
+        #apc-monitor-widget .apc-dock button { display:flex; position:relative; align-items:center; justify-content:center; flex:0 0 36px; width:36px; height:32px; min-width:0; min-height:0; margin:0; padding:0; border:0; border-radius:0; box-sizing:border-box; background:#222; color:#cbd1d8; cursor:pointer; font:inherit; line-height:1; transition:background .2s ease,color .2s ease; }
+        #apc-monitor-widget .apc-dock button:hover { background:#15181c; color:#fff; }
+        #apc-monitor-widget .apc-dock button:focus-visible { outline:2px solid #86b9ff; outline-offset:-2px; }
+        #apc-monitor-widget #apc-timer-btn { flex-basis:48px; width:48px; color:#a5e4ba; }
+        #apc-monitor-widget #apc-timer-btn[data-paused="true"] { color:#b8c0ca; }
+        #apc-monitor-widget #apc-timer-btn[data-unread="true"] { color:#ffbf62; }
+        #apc-monitor-widget .apc-timer-eyes { width:36px; height:24px; transition:opacity .2s ease; }
+        #apc-monitor-widget .apc-eye-open { transform-box:view-box; transform-origin:0 12px; animation:apc-eye-blink 8s ease-in-out infinite; }
+        #apc-monitor-widget .apc-eye-pupil { animation:apc-eye-look 12s ease-in-out infinite; }
+        #apc-monitor-widget .apc-eye-closed { opacity:0; animation:apc-eye-lids 8s ease-in-out infinite; }
+        #apc-monitor-widget #apc-timer-btn[data-paused="true"] :is(.apc-eye-open,.apc-eye-pupil,.apc-eye-closed) { animation:none; }
+        #apc-monitor-widget #apc-timer-btn[data-paused="true"] .apc-eye-open { opacity:0; }
+        #apc-monitor-widget #apc-timer-btn[data-paused="true"] .apc-eye-closed { opacity:1; }
+        #apc-monitor-widget .apc-mode-overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#ffd180; opacity:0; transition:opacity .2s ease; pointer-events:none; }
+        #apc-monitor-widget #apc-timer-btn[data-night="true"] .apc-mode-overlay { color:#c5d0ff; }
+        #apc-monitor-widget #apc-timer-btn:is(:hover,:focus-visible) .apc-mode-overlay { opacity:1; }
+        #apc-monitor-widget #apc-timer-btn:is(:hover,:focus-visible) .apc-timer-eyes { opacity:.12; }
+        #apc-monitor-widget .apc-mode-overlay svg,#apc-monitor-widget .apc-nav-icon svg,#apc-monitor-widget .apc-nav-close svg { width:19px; height:19px; display:block; }
+        #apc-monitor-widget .apc-mode-overlay .apc-moon-icon { display:none; }
+        #apc-monitor-widget #apc-timer-btn[data-night="true"] .apc-sun-icon { display:none; }
+        #apc-monitor-widget #apc-timer-btn[data-night="true"] .apc-moon-icon { display:block; }
+        #apc-monitor-widget .apc-navigation { display:flex; flex:0 0 auto; width:108px; max-width:0; opacity:0; overflow:hidden; visibility:hidden; pointer-events:none; transform:translateX(-6px); transition:max-width .28s ease,opacity .2s ease,transform .28s ease,visibility 0s .28s; }
+        #apc-monitor-widget .apc-dock[data-expanded="true"] .apc-navigation { max-width:108px; opacity:1; visibility:visible; pointer-events:auto; transform:translateX(0); transition-delay:0s; }
+        #apc-monitor-widget .apc-nav-close { display:none; }
+        #apc-monitor-widget .apc-dock button[data-current="true"] { background:#4c252b; color:#ffb7be; }
+        #apc-monitor-widget .apc-dock button[data-current="true"] .apc-nav-icon { display:none; }
+        #apc-monitor-widget .apc-dock button[data-current="true"] .apc-nav-close { display:block; }
+        #apc-monitor-widget .apc-unread-badge { position:absolute; top:1px; right:1px; min-width:10px; padding:1px 2px; background:#ffb74d; color:#17191c; font:700 9px/1 sans-serif; border-radius:6px; pointer-events:none; }
+        #apc-monitor-widget .apc-sound-warning { position:absolute; bottom:1px; right:1px; width:12px; height:12px; color:#ff858e; pointer-events:none; }
+        #apc-monitor-widget .apc-accessible-label { position:absolute; width:1px; height:1px; padding:0; margin:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+        /* Первое моргание через секунду после снятия паузы, затем каждые 8 секунд. */
+        @keyframes apc-eye-blink { 0%,10%,20%,100% { transform:scaleY(1); } 14%,16% { transform:scaleY(.03); } }
+        @keyframes apc-eye-lids { 0%,12%,18%,100% { opacity:0; } 14%,16% { opacity:1; } }
+        @keyframes apc-eye-look { 0%,12%,88%,100% { transform:translateX(0); } 28%,40% { transform:translateX(-2px); } 64%,76% { transform:translateX(2px); } }
+    `;
+    document.head.appendChild(uiStyle);
+
+    const icons = {
+        history: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/></svg>',
+        rules: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8v6l-4 2v-8Z"/></svg>',
+        settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 3-.7 3-2 .9-2.7-.9-2 3.5 2.1 2v2l-2.1 2 2 3.5 2.7-.9 2 .9L9 22h4l.7-3 2-.9 2.7.9 2-3.5-2.1-2v-2l2.1-2-2-3.5-2.7.9-2-.9L13 3Z" transform="translate(1 -.5) scale(.95)"/><circle cx="12" cy="12" r="3"/></svg>',
+        close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>'
+    };
     const debugDiv = document.createElement('div');
     debugDiv.id = 'apc-monitor-widget';
-    debugDiv.style.cssText = 'position:fixed; bottom:1.2px; left:1.2px; display:flex; flex-direction:column; align-items:flex-start; gap:0; z-index:9998; font-family:sans-serif; font-size:13px; max-width:calc(100vw - 4px); max-height:calc(100vh - 4px); max-height:calc(100dvh - 4px); min-height:0;';
+    debugDiv.style.cssText = 'position:fixed; bottom:0; left:0; display:flex; flex-direction:column; align-items:flex-start; gap:0; padding:0; margin:0; z-index:9998; font-family:sans-serif; font-size:13px; max-width:calc(100vw - 2px); max-height:calc(100vh - 2px); max-height:calc(100dvh - 2px); min-height:0;';
 
     const modal = document.createElement('div');
     modal.id = 'apc-settings-panel';
-    modal.style.cssText = 'display:none; background:#1a1a1a; color:#ccc; border:0; width:760px; max-width:calc(100vw - 4px); min-height:0; flex:0 1 auto; overflow:auto; overscroll-behavior:contain; box-sizing:border-box; box-shadow:none;';
+    modal.style.cssText = 'display:none; background:#1a1a1a; color:#ccc; border:0; width:760px; max-width:calc(100vw - 2px); min-height:0; flex:0 1 auto; overflow:auto; overscroll-behavior:contain; box-sizing:border-box; box-shadow:none;';
     const modalContent = document.createElement('div');
     modalContent.style.cssText = 'padding:0; margin:0; font-size:13px;';
     modal.appendChild(modalContent);
 
-    const controlStyle = 'display:none; background:#222; color:#ccc; border:0; border-radius:0; margin:0; padding:5px 8px; cursor:pointer; font:inherit; line-height:1.2; white-space:nowrap; word-break:normal; overflow-wrap:normal; flex-shrink:0; min-height:28px; box-sizing:border-box; align-items:center; justify-content:center;';
-    const btnNight = document.createElement('button');
-    btnNight.id = 'apc-mode-btn';
-    btnNight.type = 'button';
-    btnNight.style.cssText = controlStyle;
-    btnNight.onclick = () => {
-        isNightMode = !isNightMode;
-        localStorage.setItem('spa_night_mode', isNightMode);
-        stopCurrentAudio();
-        updateDebug();
-    };
-
     const bottomRow = document.createElement('div');
-    bottomRow.style.cssText = 'display:flex; flex-wrap:wrap; gap:0; align-items:stretch; max-width:100%; flex-shrink:0;';
+    bottomRow.className = 'apc-dock';
+    bottomRow.id = 'apc-control-dock';
     const timerBtn = document.createElement('button');
     timerBtn.id = 'apc-timer-btn';
     timerBtn.type = 'button';
-    timerBtn.style.cssText = controlStyle + 'display:flex; color:#0f0; font-family:monospace;';
+    timerBtn.innerHTML = `<svg class="apc-timer-eyes" viewBox="0 0 36 24" fill="none" aria-hidden="true">
+        <g class="apc-eye-open"><ellipse cx="9" cy="12" rx="6" ry="7" fill="currentColor"/><ellipse class="apc-eye-pupil" cx="9" cy="12" rx="2.5" ry="3.5" fill="#19232a"/></g>
+        <g class="apc-eye-open"><ellipse cx="27" cy="12" rx="6" ry="7" fill="currentColor"/><ellipse class="apc-eye-pupil" cx="27" cy="12" rx="2.5" ry="3.5" fill="#19232a"/></g>
+        <g class="apc-eye-closed" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 11q6 6 12 0M21 11q6 6 12 0"/></g>
+        </svg>
+        <span class="apc-mode-overlay" aria-hidden="true">
+            <svg class="apc-sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M19 5l-1.5 1.5m-11 11L5 19"/></svg>
+            <svg class="apc-moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14a8.7 8.7 0 0 1-10-10A8.7 8.7 0 1 0 20 14Z"/></svg>
+        </span>
+        <span class="apc-unread-badge" hidden aria-hidden="true"></span>
+        <svg class="apc-sound-warning" hidden viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3 4 6H1v4h3l3 3ZM10 5l5 6m0-6-5 6"/></svg>`;
+    const unreadBadge = timerBtn.querySelector('.apc-unread-badge');
+    const soundWarning = timerBtn.querySelector('.apc-sound-warning');
+
+    const navigation = document.createElement('div');
+    navigation.className = 'apc-navigation';
+    navigation.id = 'apc-navigation';
     const btnHist = document.createElement('button');
     btnHist.id = 'apc-history-btn';
     const btnRules = document.createElement('button');
     btnRules.id = 'apc-rules-btn';
     const btnSettings = document.createElement('button');
     btnSettings.id = 'apc-settings-btn';
-    for (const button of [btnHist, btnRules, btnSettings]) {
+    for (const [button, tab] of [[btnHist, 'history'], [btnRules, 'rules'], [btnSettings, 'settings']]) {
         button.type = 'button';
-        button.style.cssText = controlStyle;
+        button.innerHTML = `<span class="apc-nav-icon">${icons[tab]}</span><span class="apc-nav-close">${icons.close}</span><span class="apc-accessible-label"></span>`;
+        button.setAttribute('aria-controls', modal.id);
+        navigation.appendChild(button);
     }
-    bottomRow.append(timerBtn, btnHist, btnRules, btnSettings);
-    debugDiv.append(modal, btnNight, bottomRow);
+    bottomRow.append(timerBtn, navigation);
+    debugDiv.append(modal, bottomRow);
     document.body.appendChild(debugDiv);
+
+    let dockHovered = false;
+    let dockFocused = false;
+    let dockSuppressReveal = false;
+    const supportsHover = window.matchMedia('(hover:hover)').matches;
+    function updateDockVisibility() {
+        const visible = isModalOpen || !supportsHover || (!dockSuppressReveal && (dockHovered || dockFocused));
+        bottomRow.dataset.expanded = String(visible);
+        navigation.setAttribute('aria-hidden', String(!visible));
+        for (const button of [btnHist, btnRules, btnSettings]) button.tabIndex = visible ? 0 : -1;
+    }
+    bottomRow.addEventListener('pointerenter', () => {
+        dockHovered = true;
+        dockSuppressReveal = false;
+        updateDockVisibility();
+    });
+    bottomRow.addEventListener('pointerleave', () => {
+        dockHovered = false;
+        dockSuppressReveal = false;
+        updateDockVisibility();
+    });
+    bottomRow.addEventListener('focusin', event => {
+        dockFocused = event.target.matches(':focus-visible');
+        if (!debugDiv.contains(event.relatedTarget)) dockSuppressReveal = false;
+        updateDockVisibility();
+    });
+    bottomRow.addEventListener('focusout', () => queueMicrotask(() => {
+        dockFocused = bottomRow.contains(document.activeElement) && document.activeElement.matches(':focus-visible');
+        if (!bottomRow.contains(document.activeElement)) dockSuppressReveal = false;
+        updateDockVisibility();
+    }));
+    debugDiv.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            event.stopPropagation();
+            closeInterface();
+        }
+    });
 
     function updateDebug() {
         const backgroundText = `${t('backgroundLabel')}: ${t('background_' + backgroundState)}`;
-        timerBtn.title = `${t('debugTooltip')}\n${backgroundText}`;
-
-        const m = Math.floor(Math.max(0, timeLeft) / 60);
-        const s = Math.floor(Math.max(0, timeLeft) % 60);
+        const minutes = Math.floor(Math.max(0, timeLeft) / 60);
+        const seconds = Math.floor(Math.max(0, timeLeft) % 60);
         const unreadCount = getUnreadCount();
-
-        const timerPaused = isPaused || (isModalOpen && !document.hidden);
-        let statusText = `🔄 ${m}:${s.toString().padStart(2, '0')} | ${timerPaused ? t('paused') : t('running')}`;
-
-        if (unreadCount > 0) {
-            statusText += ` | 🟠 ${t('newAlarms')}: ${unreadCount}`;
-        }
-
-        if (soundState === 'blocked') statusText += ` | ${t('soundBlockedShort')}`;
-        else if (soundState === 'noFile') statusText += ` | ${t('soundMissingShort')}`;
-        if (soundState !== 'idle') timerBtn.title += `\n${t('soundLabel')}: ${t('sound_' + soundState)}`;
-        timerBtn.textContent = isModalOpen ? t('closePanel') : statusText;
-        timerBtn.setAttribute('aria-expanded', String(isModalOpen));
-        timerBtn.setAttribute('aria-controls', modal.id);
-        timerBtn.style.background = isModalOpen ? '#522' : '#222';
-        timerBtn.style.color = isModalOpen ? '#fff' : unreadCount > 0 ? '#ffaa00' : '#0f0';
-        timerBtn.style.borderColor = isModalOpen ? '#a44' : unreadCount > 0 ? '#ffaa00' : '#444';
+        const timerPaused = isPaused;
+        let statusText = `${t('timerText')}: ${minutes}:${seconds.toString().padStart(2, '0')} | ${timerPaused ? t('paused') : t('running')}`;
+        if (unreadCount > 0) statusText += ` | ${t('newAlarms')}: ${unreadCount}`;
+        if (soundState !== 'idle') statusText += ` | ${t('soundLabel')}: ${t('sound_' + soundState)}`;
+        timerBtn.title = `${statusText}\n${isNightMode ? t('nightMode') : t('dayMode')}\n${t('debugTooltip')}\n${backgroundText}`;
+        timerBtn.setAttribute('aria-label', timerBtn.title);
+        timerBtn.setAttribute('aria-pressed', String(isNightMode));
+        timerBtn.dataset.paused = String(timerPaused);
+        timerBtn.dataset.night = String(isNightMode);
+        timerBtn.dataset.unread = String(unreadCount > 0);
+        unreadBadge.hidden = unreadCount === 0;
+        unreadBadge.textContent = unreadCount > 99 ? '99+' : String(unreadCount);
+        soundWarning.toggleAttribute('hidden', !['blocked', 'noFile'].includes(soundState));
         modal.style.display = isModalOpen ? 'block' : 'none';
-        btnNight.style.display = isModalOpen ? 'block' : 'none';
-        btnNight.textContent = isNightMode ? t('nightMode') : t('dayMode');
-        btnNight.style.background = isNightMode ? '#1e3a5f' : '#222';
-        for (const button of [btnHist, btnRules, btnSettings]) button.style.display = isModalOpen ? 'flex' : 'none';
+        modal.style.width = activeTab === 'history' ? '760px' : activeTab === 'rules' ? '640px' : '468px';
         const statusLine = document.querySelector('#apc-settings-status');
         if (statusLine) statusLine.textContent = backgroundText + (soundState !== 'idle' ? ` | ${t('soundLabel')}: ${t('sound_' + soundState)}` : '');
-        modal.style.width = activeTab === 'history' ? '760px' : activeTab === 'rules' ? '640px' : '468px';
+        updateHeaderLabels();
+        updateDockVisibility();
     }
 
     setInterval(() => {
@@ -786,12 +876,17 @@
     let activePermissionBrowser = null;
 
     function updateHeaderLabels() {
-        btnHist.textContent = t('historyButton');
-        btnHist.title = t('tabHistory');
-        btnRules.textContent = t('rulesButton');
-        btnRules.title = t('tabRules');
-        btnSettings.textContent = t('settingsButton');
-        btnSettings.title = t('tabSettings');
+        for (const [button, tab, key] of [[btnHist, 'history', 'historyButton'], [btnRules, 'rules', 'rulesButton'], [btnSettings, 'settings', 'settingsButton']]) {
+            const selected = isModalOpen && activeTab === tab;
+            const sectionLabel = t(key);
+            const caption = selected ? t('closePanel') : sectionLabel;
+            const label = button.querySelector('.apc-accessible-label');
+            if (label.textContent !== caption) label.textContent = caption;
+            button.title = selected ? `${t('closeInterface')} (${sectionLabel})` : sectionLabel;
+            button.setAttribute('aria-label', button.title);
+            button.setAttribute('aria-expanded', String(selected));
+            button.dataset.current = String(selected);
+        }
     }
 
     function copyAddressRow(address) {
@@ -867,9 +962,6 @@
         modalContent.innerHTML = '';
 
         if (activeTab === 'history') {
-            btnHist.style.background = '#333'; btnHist.style.color = '#fff';
-            btnRules.style.background = '#222'; btnRules.style.color = '#aaa';
-            btnSettings.style.background = '#222'; btnSettings.style.color = '#aaa';
 
             const table = document.createElement('table');
             table.style.cssText = tableStyle + 'min-width:700px;';
@@ -918,9 +1010,6 @@
             modalContent.appendChild(table);
 
         } else if (activeTab === 'rules') {
-            btnHist.style.background = '#222'; btnHist.style.color = '#aaa';
-            btnRules.style.background = '#333'; btnRules.style.color = '#fff';
-            btnSettings.style.background = '#222'; btnSettings.style.color = '#aaa';
 
             const table = document.createElement('table');
             table.style.cssText = tableStyle + 'min-width:540px;';
@@ -950,9 +1039,6 @@
             modalContent.appendChild(table);
 
         } else if (activeTab === 'settings') {
-            btnHist.style.background = '#222'; btnHist.style.color = '#aaa';
-            btnRules.style.background = '#222'; btnRules.style.color = '#aaa';
-            btnSettings.style.background = '#333'; btnSettings.style.color = '#fff';
 
             const settingsDiv = document.createElement('div');
             settingsDiv.style.cssText = 'width:100%; box-sizing:border-box; padding:6px; display:flex; flex-direction:column; gap:8px;';
@@ -1080,20 +1166,35 @@
         updateDebug();
     }
 
-    btnHist.onclick = () => { activeTab = 'history'; markAllAsRead(); renderModal(); modal.scrollTop = modal.scrollHeight; };
-    btnRules.onclick = () => { activeTab = 'rules'; renderModal(); modal.scrollTop = modal.scrollHeight; };
-    btnSettings.onclick = () => { activeTab = 'settings'; renderModal(); };
+    function closeInterface() {
+        isModalOpen = false;
+        dockSuppressReveal = true;
+        updateDebug();
+        if (debugDiv.contains(document.activeElement) && document.activeElement !== timerBtn) {
+            timerBtn.focus({ preventScroll: true });
+        }
+    }
+
+    function openSection(tab) {
+        if (isModalOpen && activeTab === tab) {
+            closeInterface();
+            return;
+        }
+        isModalOpen = true;
+        dockSuppressReveal = false;
+        activeTab = tab;
+        if (tab === 'history') markAllAsRead();
+        renderModal();
+        modal.scrollTop = tab === 'settings' ? 0 : modal.scrollHeight;
+    }
+    btnHist.onclick = () => openSection('history');
+    btnRules.onclick = () => openSection('rules');
+    btnSettings.onclick = () => openSection('settings');
 
     timerBtn.onclick = () => {
-        isModalOpen = !isModalOpen;
-        if (isModalOpen) {
-            activeTab = 'history';
-            markAllAsRead();
-            renderModal();
-            modal.scrollTop = modal.scrollHeight;
-        } else {
-            lastTick = Date.now();
-        }
+        isNightMode = !isNightMode;
+        localStorage.setItem('spa_night_mode', isNightMode);
+        stopCurrentAudio();
         updateDebug();
     };
 
@@ -1126,7 +1227,7 @@
     let isParsingAlarms = false;
 
     async function checkAndParseAlarms() {
-        if (location.hash !== TARGET_HASH || isPaused || (isModalOpen && !document.hidden) || isParsingAlarms) return;
+        if (location.hash !== TARGET_HASH || isPaused || isParsingAlarms) return;
 
         isParsingAlarms = true;
         let needsCacheSave = false, hasNewUnmutedAlarm = false;
@@ -1265,7 +1366,7 @@
         const now = Date.now();
         const delta = (now - lastTick) / 1000;
         lastTick = now;
-        if (!isPaused && !(isModalOpen && !document.hidden)) {
+        if (!isPaused) {
             timeLeft -= delta;
             if (timeLeft <= 0 && !isParsingAlarms) {  // не перезагружаем во время парсинга
                 isPaused = true;
@@ -1275,7 +1376,7 @@
         updateDebug();
     }, 1000);
 
-    // Активность для паузы таймера
+    // Пауза только на время реальных действий оператора; открытая панель не останавливает мониторинг.
     function setWorking() {
         isPaused = true;
         clearTimeout(idleTimeout);
