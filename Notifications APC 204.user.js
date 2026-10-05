@@ -1,9 +1,11 @@
 // ==UserScript==
-// @name         APC 204 Alarm Reloader & Manager
+// @name         Notifications APC 204
 // @namespace    http://tampermonkey.net/
-// @version      20261005.1
-// @description  История тревог, фильтры, общий раздел настроек, переключатель языка (RU/UK), кастомный выбор звука
+// @version      20261005.2
+// @description  История тревог, фильтры, общий раздел настроек, переключатель языка (RU/UK), кастомный выбор звука.
 // @match        http://172.23.255.204/desktop/*
+// @updateURL    https://raw.githubusercontent.com/Ovolsan/Notifications-APC-204/main/Notifications%20APC%20204.user.js
+// @downloadURL  https://raw.githubusercontent.com/Ovolsan/Notifications-APC-204/main/Notifications%20APC%20204.user.js
 // @grant        GM_xmlhttpRequest
 // @connect      raw.githubusercontent.com
 // ==/UserScript==
