@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Notifications APC 204
 // @namespace    http://tampermonkey.net/
-// @version      20261005.2
-// @description  История тревог, фильтры, общий раздел настроек, переключатель языка (RU/UK), кастомный выбор звука.
+// @version      20261005.3
+// @description  Історія тривог, фільтри, налаштування, мови UK/RU та власні мелодії сповіщень.
 // @match        http://172.23.255.204/desktop/*
 // @updateURL    https://raw.githubusercontent.com/Ovolsan/Notifications-APC-204/main/Notifications%20APC%20204.user.js
 // @downloadURL  https://raw.githubusercontent.com/Ovolsan/Notifications-APC-204/main/Notifications%20APC%20204.user.js
@@ -43,7 +43,7 @@
     let standardAudioData = localStorage.getItem('spa_snd_std') || null;
     let afkAudioData = localStorage.getItem('spa_snd_afk') || null;
     let isNightMode = localStorage.getItem('spa_night_mode') === 'true';
-    let currentLang = localStorage.getItem('spa_lang') || 'ru';
+    let currentLang = localStorage.getItem('spa_lang') || 'uk';
     let currentAudio = null;
     let soundAttempt = 0;
     let speechFallbackTimer = null;
@@ -62,83 +62,6 @@
     // Основные переводы: languages/ru.json и languages/uk.json.
     // Встроенный резерв позволяет мониторингу работать без сети.
     const fallbackI18n = {
-        "ru": {
-            "tabHistory": "История тревог",
-            "tabRules": "Фильтры (Игнор)",
-            "tabSettings": "Настройки",
-            "historyButton": "🕘 История",
-            "rulesButton": "🔕 Фильтры",
-            "settingsButton": "⚙️ Настройки",
-            "closePanel": "❌ Закрыть",
-            "permissionsTitle": "Разрешения браузера",
-            "permissionsEdge": "Разрешения для Edge",
-            "permissionsFirefox": "Разрешения для Firefox",
-            "permissionsChrome": "Разрешения для Chrome",
-            "copyAddress": "Копировать",
-            "copiedAddress": "Скопировано ✓",
-            "copyFailed": "Выделите адрес и скопируйте вручную",
-            "siteAddress": "Адрес APC для списка разрешённых сайтов",
-            "permissionsAfter": "После изменения разрешений обновите страницу APC и нажмите «Тест» у выбранной мелодии. Внутренние адреса настроек нужно вставлять в адресную строку браузера; скрипт не может изменить разрешения сам.",
-            "firefoxSoundTitle": "Автовоспроизведение звука",
-            "firefoxSoundNote": "В Firefox откройте «Приватность и защита» → «Разрешения» → «Автовоспроизведение» → «Параметры». Для сайта APC выберите «Разрешить аудио и видео». Разрешение также можно изменить через значок автовоспроизведения рядом с адресом страницы.",
-            "memoryTitle": "Сон и выгрузка вкладок",
-            "firefoxMemoryNote": "Firefox может выгружать вкладки при нехватке памяти. На странице about:unloads можно проверить состояние вкладок. Не выгружайте APC вручную; если используете расширение для усыпления вкладок, добавьте APC в его исключения.",
-            "chromeSoundNote": "В Chrome разрешите сайту APC воспроизводить звук. Отдельного переключателя автовоспроизведения, как в Edge, здесь нет: запуск также зависит от взаимодействия с сайтом. Если звук заблокирован, откройте настройки скрипта и нажмите «Тест».",
-            "chromeMemoryNote": "В Chrome откройте «Производительность» → «Всегда сохранять эти сайты активными» («Завжди зберігати ці сайти активними») и добавьте http://172.23.255.204. Это исключение предотвращает деактивацию вкладки режимом экономии памяти.",
-            "dayMode": "☀️ День (Стандарт)",
-            "nightMode": "🌙 Ночь (AFK-мелодия)",
-            "close": "Закрыть [X]",
-            "debugTooltip": "Кликни, чтобы открыть Историю, Фильтры и Настройки",
-            "timerStopped": "Таймер остановлен (Открыто меню)",
-            "timerText": "Таймер",
-            "paused": "ПАУЗА",
-            "running": "ИДЕТ",
-            "newAlarms": "Нов",
-            "titleNewAlarms": "🟠 НОВЫЕ ТРЕВОГИ",
-            "colTime": "Время",
-            "colLabel": "Label",
-            "colAlarm": "Тревога",
-            "colAction": "Действие",
-            "emptyHistory": "История пуста",
-            "inMute": "В игноре",
-            "hideBtn": "Скрыть",
-            "noLabelAlert": "Нельзя добавить в игнор без Label.",
-            "ignorePrompt": "Игнор для Label: {0}\nКлючевая фраза (без цифр, которые меняются):",
-            "colPhrase": "Фраза в описании",
-            "emptyRules": "Нет активных фильтров",
-            "delBtn": "Удалить",
-            "unknown": "Неизвестно",
-            "langTitle": "Язык интерфейса / Мова інтерфейсу",
-            "stdSoundTitle": "Стандартная мелодия (Дневной режим)",
-            "stdSoundDesc": "TTS \"Батареи\" + эта мелодия.",
-            "afkSoundTitle": "AFK Мелодия (Ночной режим)",
-            "afkSoundDesc": "TTS \"Батареи\" + эта мелодия (если включён 🌙).",
-            "testBtn": "Тест",
-            "soundNote": "Файлы до 2 МБ. Звук останавливается кликом по странице.",
-            "fileSizeError": "Файл >2 МБ!",
-            "notifTitle": "Тревога",
-            "timeLabel": "Время",
-            "chooseFile": "Файл",
-            "noFile": "Файл не выбран",
-            "soundLabel": "Звук",
-            "sound_pending": "ожидает проверки",
-            "sound_playing": "воспроизводится",
-            "sound_blocked": "не запустился — проверьте автовоспроизведение Edge",
-            "sound_noFile": "не настроена мелодия",
-            "soundBlockedShort": "🔇 Звук не запустился",
-            "soundMissingShort": "🔇 Нет мелодии",
-            "autoplayTitle": "Звуковые уведомления — автовоспроизведение Edge",
-            "autoplayNote": "Для надёжного звука после автоматической перезагрузки разрешите автовоспроизведение мультимедиа в Microsoft Edge. Скопируйте адрес ниже и вставьте его в адресную строку браузера:",
-            "autoplaySteps": "Если доступен список разрешённых сайтов, добавьте http://172.23.255.204. Иначе выберите «Разрешить» в настройке автовоспроизведения (эта настройка действует на все сайты). После изменения обновите страницу APC и нажмите «Тест» у выбранной мелодии. Разрешение автовоспроизведения задаётся в Edge; скрипт не может включить его сам.",
-            "backgroundLabel": "Фон",
-            "background_connecting": "подключение",
-            "background_active": "поддержка включена",
-            "background_retrying": "повтор подключения",
-            "background_unavailable": "защита недоступна",
-            "background_stopped": "остановлен",
-            "backgroundTitle": "Работа в фоновой вкладке (Microsoft Edge)",
-            "backgroundNote": "В Edge откройте Настройки → Система и производительность → Производительность → «Всегда сохранять эти сайты активными» (в старых версиях — «Никогда не переводить эти сайты в спящий режим») и добавьте http://172.23.255.204. Скрипт поддерживает фоновые таймеры, но исключение из сна задаётся в браузере."
-        },
         "uk": {
             "tabHistory": "Історія тривог",
             "tabRules": "Фільтри (Ігнор)",
@@ -185,7 +108,7 @@
             "emptyRules": "Немає активних фільтрів",
             "delBtn": "Видалити",
             "unknown": "Невідомо",
-            "langTitle": "Язык интерфейса / Мова інтерфейсу",
+            "langTitle": "Мова інтерфейсу / Язык интерфейса",
             "stdSoundTitle": "Стандартна мелодія (Денний режим)",
             "stdSoundDesc": "TTS \"Батареї\" + ця мелодія.",
             "afkSoundTitle": "AFK Мелодія (Нічний режим)",
@@ -215,6 +138,83 @@
             "background_stopped": "зупинено",
             "backgroundTitle": "Робота у фоновій вкладці (Microsoft Edge)",
             "backgroundNote": "В Edge відкрийте Налаштування → Система та продуктивність → Продуктивність → «Завжди зберігати ці сайти активними» (у старих версіях — «Ніколи не переводити ці сайти в режим сну») та додайте http://172.23.255.204. Скрипт підтримує фонові таймери, але виняток із режиму сну задається у браузері."
+        },
+        "ru": {
+            "tabHistory": "История тревог",
+            "tabRules": "Фильтры (Игнор)",
+            "tabSettings": "Настройки",
+            "historyButton": "🕘 История",
+            "rulesButton": "🔕 Фильтры",
+            "settingsButton": "⚙️ Настройки",
+            "closePanel": "❌ Закрыть",
+            "permissionsTitle": "Разрешения браузера",
+            "permissionsEdge": "Разрешения для Edge",
+            "permissionsFirefox": "Разрешения для Firefox",
+            "permissionsChrome": "Разрешения для Chrome",
+            "copyAddress": "Копировать",
+            "copiedAddress": "Скопировано ✓",
+            "copyFailed": "Выделите адрес и скопируйте вручную",
+            "siteAddress": "Адрес APC для списка разрешённых сайтов",
+            "permissionsAfter": "После изменения разрешений обновите страницу APC и нажмите «Тест» у выбранной мелодии. Внутренние адреса настроек нужно вставлять в адресную строку браузера; скрипт не может изменить разрешения сам.",
+            "firefoxSoundTitle": "Автовоспроизведение звука",
+            "firefoxSoundNote": "В Firefox откройте «Приватность и защита» → «Разрешения» → «Автовоспроизведение» → «Параметры». Для сайта APC выберите «Разрешить аудио и видео». Разрешение также можно изменить через значок автовоспроизведения рядом с адресом страницы.",
+            "memoryTitle": "Сон и выгрузка вкладок",
+            "firefoxMemoryNote": "Firefox может выгружать вкладки при нехватке памяти. На странице about:unloads можно проверить состояние вкладок. Не выгружайте APC вручную; если используете расширение для усыпления вкладок, добавьте APC в его исключения.",
+            "chromeSoundNote": "В Chrome разрешите сайту APC воспроизводить звук. Отдельного переключателя автовоспроизведения, как в Edge, здесь нет: запуск также зависит от взаимодействия с сайтом. Если звук заблокирован, откройте настройки скрипта и нажмите «Тест».",
+            "chromeMemoryNote": "В Chrome откройте «Производительность» → «Всегда сохранять эти сайты активными» («Завжди зберігати ці сайти активними») и добавьте http://172.23.255.204. Это исключение предотвращает деактивацию вкладки режимом экономии памяти.",
+            "dayMode": "☀️ День (Стандарт)",
+            "nightMode": "🌙 Ночь (AFK-мелодия)",
+            "close": "Закрыть [X]",
+            "debugTooltip": "Кликни, чтобы открыть Историю, Фильтры и Настройки",
+            "timerStopped": "Таймер остановлен (Открыто меню)",
+            "timerText": "Таймер",
+            "paused": "ПАУЗА",
+            "running": "ИДЕТ",
+            "newAlarms": "Нов",
+            "titleNewAlarms": "🟠 НОВЫЕ ТРЕВОГИ",
+            "colTime": "Время",
+            "colLabel": "Label",
+            "colAlarm": "Тревога",
+            "colAction": "Действие",
+            "emptyHistory": "История пуста",
+            "inMute": "В игноре",
+            "hideBtn": "Скрыть",
+            "noLabelAlert": "Нельзя добавить в игнор без Label.",
+            "ignorePrompt": "Игнор для Label: {0}\nКлючевая фраза (без цифр, которые меняются):",
+            "colPhrase": "Фраза в описании",
+            "emptyRules": "Нет активных фильтров",
+            "delBtn": "Удалить",
+            "unknown": "Неизвестно",
+            "langTitle": "Мова інтерфейсу / Язык интерфейса",
+            "stdSoundTitle": "Стандартная мелодия (Дневной режим)",
+            "stdSoundDesc": "TTS \"Батареи\" + эта мелодия.",
+            "afkSoundTitle": "AFK Мелодия (Ночной режим)",
+            "afkSoundDesc": "TTS \"Батареи\" + эта мелодия (если включён 🌙).",
+            "testBtn": "Тест",
+            "soundNote": "Файлы до 2 МБ. Звук останавливается кликом по странице.",
+            "fileSizeError": "Файл >2 МБ!",
+            "notifTitle": "Тревога",
+            "timeLabel": "Время",
+            "chooseFile": "Файл",
+            "noFile": "Файл не выбран",
+            "soundLabel": "Звук",
+            "sound_pending": "ожидает проверки",
+            "sound_playing": "воспроизводится",
+            "sound_blocked": "не запустился — проверьте автовоспроизведение Edge",
+            "sound_noFile": "не настроена мелодия",
+            "soundBlockedShort": "🔇 Звук не запустился",
+            "soundMissingShort": "🔇 Нет мелодии",
+            "autoplayTitle": "Звуковые уведомления — автовоспроизведение Edge",
+            "autoplayNote": "Для надёжного звука после автоматической перезагрузки разрешите автовоспроизведение мультимедиа в Microsoft Edge. Скопируйте адрес ниже и вставьте его в адресную строку браузера:",
+            "autoplaySteps": "Если доступен список разрешённых сайтов, добавьте http://172.23.255.204. Иначе выберите «Разрешить» в настройке автовоспроизведения (эта настройка действует на все сайты). После изменения обновите страницу APC и нажмите «Тест» у выбранной мелодии. Разрешение автовоспроизведения задаётся в Edge; скрипт не может включить его сам.",
+            "backgroundLabel": "Фон",
+            "background_connecting": "подключение",
+            "background_active": "поддержка включена",
+            "background_retrying": "повтор подключения",
+            "background_unavailable": "защита недоступна",
+            "background_stopped": "остановлен",
+            "backgroundTitle": "Работа в фоновой вкладке (Microsoft Edge)",
+            "backgroundNote": "В Edge откройте Настройки → Система и производительность → Производительность → «Всегда сохранять эти сайты активными» (в старых версиях — «Никогда не переводить эти сайты в спящий режим») и добавьте http://172.23.255.204. Скрипт поддерживает фоновые таймеры, но исключение из сна задаётся в браузере."
         }
     };
 
@@ -223,8 +223,8 @@
     const LANGUAGE_MAX_BYTES = 128 * 1024;
     const languageRequests = new Map();
     const loadedLanguages = new Set();
-    const i18n = { ru: { ...fallbackI18n.ru }, uk: { ...fallbackI18n.uk } };
-    if (!Object.hasOwn(i18n, currentLang)) currentLang = 'ru';
+    const i18n = { uk: { ...fallbackI18n.uk }, ru: { ...fallbackI18n.ru } };
+    if (!Object.hasOwn(i18n, currentLang)) currentLang = 'uk';
 
     function validateLanguage(pack, lang) {
         if (!pack || typeof pack !== 'object' || Array.isArray(pack)) throw new Error('Invalid language JSON');
@@ -235,7 +235,9 @@
             if (typeof value !== 'string' || !value.trim() || value.length > 10000) {
                 throw new Error('Invalid translation: ' + key);
             }
-            translations[key] = value;
+            // Старый кеш и ещё не обновлённый JSON не возвращают русский заголовок первым.
+            translations[key] = key === 'langTitle' && value === 'Язык интерфейса / Мова інтерфейсу'
+                ? fallbackI18n[lang].langTitle : value;
         }
         if (!Object.keys(translations).length) throw new Error('Empty language JSON');
         return translations;
@@ -336,7 +338,7 @@
     }
 
     function t(key, ...args) {
-        const value = i18n[currentLang]?.[key] || fallbackI18n.ru[key] || key;
+        const value = i18n[currentLang]?.[key] || fallbackI18n.uk[key] || key;
         return value.replace(/\{(\d+)\}/g, (placeholder, index) =>
             args[index] === undefined ? placeholder : String(args[index]));
     }
@@ -682,16 +684,16 @@
     // --- UI ТАЙМЕРА ---
     const debugDiv = document.createElement('div');
     debugDiv.id = 'apc-monitor-widget';
-    debugDiv.style.cssText = 'position:fixed; bottom:1.2px; left:1.2px; display:flex; flex-direction:column; align-items:flex-start; gap:0; z-index:9998; font-family:sans-serif; font-size:13px; max-width:calc(100vw - 4px);';
+    debugDiv.style.cssText = 'position:fixed; bottom:1.2px; left:1.2px; display:flex; flex-direction:column; align-items:flex-start; gap:0; z-index:9998; font-family:sans-serif; font-size:13px; max-width:calc(100vw - 4px); max-height:calc(100vh - 4px); max-height:calc(100dvh - 4px); min-height:0;';
 
     const modal = document.createElement('div');
     modal.id = 'apc-settings-panel';
-    modal.style.cssText = 'display:none; background:#1a1a1a; color:#ccc; border:0; width:468px; max-width:calc(100vw - 4px); box-sizing:border-box; box-shadow:none;';
+    modal.style.cssText = 'display:none; background:#1a1a1a; color:#ccc; border:0; width:760px; max-width:calc(100vw - 4px); min-height:0; flex:0 1 auto; overflow:auto; overscroll-behavior:contain; box-sizing:border-box; box-shadow:none;';
     const modalContent = document.createElement('div');
     modalContent.style.cssText = 'padding:0; margin:0; font-size:13px;';
     modal.appendChild(modalContent);
 
-    const controlStyle = 'display:none; background:#222; color:#ccc; border:0; border-radius:0; margin:0; padding:5px 12px; cursor:pointer; font:inherit; min-height:28px; box-sizing:border-box; align-items:center; justify-content:center;';
+    const controlStyle = 'display:none; background:#222; color:#ccc; border:0; border-radius:0; margin:0; padding:5px 8px; cursor:pointer; font:inherit; line-height:1.2; white-space:nowrap; word-break:normal; overflow-wrap:normal; flex-shrink:0; min-height:28px; box-sizing:border-box; align-items:center; justify-content:center;';
     const btnNight = document.createElement('button');
     btnNight.id = 'apc-mode-btn';
     btnNight.type = 'button';
@@ -704,7 +706,7 @@
     };
 
     const bottomRow = document.createElement('div');
-    bottomRow.style.cssText = 'display:flex; flex-wrap:wrap; gap:0; align-items:stretch; max-width:100%;';
+    bottomRow.style.cssText = 'display:flex; flex-wrap:wrap; gap:0; align-items:stretch; max-width:100%; flex-shrink:0;';
     const timerBtn = document.createElement('button');
     timerBtn.id = 'apc-timer-btn';
     timerBtn.type = 'button';
@@ -722,44 +724,6 @@
     bottomRow.append(timerBtn, btnHist, btnRules, btnSettings);
     debugDiv.append(modal, btnNight, bottomRow);
     document.body.appendChild(debugDiv);
-
-    let lastWidgetLayout = '';
-    let pageOverflowRestore = null;
-    function setPageScrolling(enabled) {
-        if (enabled && !pageOverflowRestore) {
-            // SPA может запрещать прокрутку документа. Временно открываем её
-            // для высокой панели, сохраняя прежние inline-стили страницы.
-            pageOverflowRestore = [document.documentElement, document.body].map(element => ({
-                element,
-                properties: ['overflow', 'overflow-x', 'overflow-y'].map(name => ({
-                    name, value: element.style.getPropertyValue(name), priority: element.style.getPropertyPriority(name)
-                }))
-            }));
-            document.documentElement.style.setProperty('overflow', 'auto', 'important');
-            document.body.style.setProperty('overflow', 'visible', 'important');
-        } else if (!enabled && pageOverflowRestore) {
-            for (const { element, properties } of pageOverflowRestore) {
-                element.style.removeProperty('overflow');
-                for (const { name, value, priority } of properties) {
-                    if (value) element.style.setProperty(name, value, priority);
-                }
-            }
-            pageOverflowRestore = null;
-        }
-    }
-    function layoutWidget() {
-        const height = debugDiv.offsetHeight;
-        const layout = `${isModalOpen}|${height}|${window.innerHeight}|${window.innerWidth}`;
-        if (layout === lastWidgetLayout) return;
-        lastWidgetLayout = layout;
-        const tall = isModalOpen && height > window.innerHeight - 2.4;
-        debugDiv.style.position = tall ? 'absolute' : 'fixed';
-        debugDiv.style.top = tall ? `${window.scrollY + 1.2}px` : 'auto';
-        debugDiv.style.bottom = tall ? 'auto' : '1.2px';
-        setPageScrolling(tall);
-    }
-    if (typeof ResizeObserver === 'function') new ResizeObserver(layoutWidget).observe(debugDiv);
-    window.addEventListener('resize', layoutWidget);
 
     function updateDebug() {
         const backgroundText = `${t('backgroundLabel')}: ${t('background_' + backgroundState)}`;
@@ -792,7 +756,7 @@
         for (const button of [btnHist, btnRules, btnSettings]) button.style.display = isModalOpen ? 'flex' : 'none';
         const statusLine = document.querySelector('#apc-settings-status');
         if (statusLine) statusLine.textContent = backgroundText + (soundState !== 'idle' ? ` | ${t('soundLabel')}: ${t('sound_' + soundState)}` : '');
-        layoutWidget();
+        modal.style.width = activeTab === 'history' ? '760px' : activeTab === 'rules' ? '640px' : '468px';
     }
 
     setInterval(() => {
@@ -811,10 +775,13 @@
         }
     }, 1000);
 
-    const tableStyle = `width:100%; border-collapse:collapse; text-align:left; overflow-wrap:anywhere;`;
-    const thStyle = `border:0; padding:2px 4px; background:#2a2a2a; color:#fff;`;
-    const tdStyle = `border:0; padding:2px 4px;`;
-    const btnActionStyle = `background:#444; color:#fff; border:none; padding:5px 10px; cursor:pointer; font-size:12px; border-radius:0; margin:0;`;
+    const tableStyle = `width:100%; margin:0; border:0; border-collapse:collapse; table-layout:auto; text-align:left; font:inherit;`;
+    const thStyle = `border:0; padding:3px 6px; background:#2a2a2a; color:#fff; font:inherit; font-weight:bold; white-space:nowrap; word-break:normal; overflow-wrap:normal; position:sticky; top:0; z-index:1;`;
+    const tdStyle = `border:0; padding:3px 6px; font:inherit; line-height:1.35; vertical-align:top;`;
+    const identityCellStyle = tdStyle + `width:1%; white-space:nowrap; word-break:normal; overflow-wrap:normal;`;
+    const descriptionCellStyle = tdStyle + `white-space:normal; word-break:normal; overflow-wrap:anywhere;`;
+    const actionCellStyle = identityCellStyle + `text-align:center;`;
+    const btnActionStyle = `background:#444; color:#fff; border:none; padding:3px 6px; cursor:pointer; font-family:inherit; font-size:12px; line-height:1.2; white-space:nowrap; word-break:normal; overflow-wrap:normal; width:auto; min-width:max-content; flex-shrink:0; border-radius:0; margin:0;`;
     let activeTab = 'history';
     let activePermissionBrowser = null;
 
@@ -905,11 +872,12 @@
             btnSettings.style.background = '#222'; btnSettings.style.color = '#aaa';
 
             const table = document.createElement('table');
-            table.style.cssText = tableStyle;
-            table.innerHTML = `<tr><th style="${thStyle}">${htmlT('colTime')}</th><th style="${thStyle}">${htmlT('colLabel')}</th><th style="${thStyle}">${htmlT('colAlarm')}</th><th style="${thStyle}">${htmlT('colAction')}</th></tr>`;
+            table.style.cssText = tableStyle + 'min-width:700px;';
+            table.innerHTML = `<thead><tr><th style="${thStyle}">${htmlT('colTime')}</th><th style="${thStyle}">${htmlT('colLabel')}</th><th style="${thStyle}">${htmlT('colAlarm')}</th><th style="${thStyle}">${htmlT('colAction')}</th></tr></thead>`;
+            const rows = table.createTBody();
 
             const sortedAlarms = Object.values(alarmsCache).filter(a => a && typeof a === 'object').sort((a, b) => (a.parsedAt || 0) - (b.parsedAt || 0));
-            if (sortedAlarms.length === 0) table.innerHTML += `<tr><td colspan="4" style="${tdStyle} text-align:center; color:#888;">${htmlT('emptyHistory')}</td></tr>`;
+            if (sortedAlarms.length === 0) rows.innerHTML = `<tr><td colspan="4" style="${tdStyle} text-align:center; color:#888;">${htmlT('emptyHistory')}</td></tr>`;
 
             sortedAlarms.forEach(alarm => {
                 const tr = document.createElement('tr');
@@ -920,14 +888,14 @@
                 if (muted) tr.style.opacity = '0.5';
 
                 tr.innerHTML = `
-                    <td style="${tdStyle}">${safeTime}</td>
-                    <td style="${tdStyle}">${safeLabel}</td>
-                    <td style="${tdStyle}">${safeDesc}</td>
-                    <td style="${tdStyle}">
-                        ${muted ? `<span style="color:#888;">${htmlT('inMute')}</span>` : `<button class="ignore-btn" data-label="${safeLabel.replace(/"/g, '&quot;')}" data-desc="${safeDesc.replace(/"/g, '&quot;')}" style="${btnActionStyle}">${htmlT('hideBtn')}</button>`}
+                    <td style="${identityCellStyle}">${escapeHtml(safeTime)}</td>
+                    <td style="${identityCellStyle}">${escapeHtml(safeLabel)}</td>
+                    <td style="${descriptionCellStyle}">${escapeHtml(safeDesc)}</td>
+                    <td style="${actionCellStyle}">
+                        ${muted ? `<span style="color:#888;">${htmlT('inMute')}</span>` : `<button class="ignore-btn" data-label="${escapeHtml(safeLabel)}" data-desc="${escapeHtml(safeDesc)}" style="${btnActionStyle}">${htmlT('hideBtn')}</button>`}
                     </td>
                 `;
-                table.appendChild(tr);
+                rows.appendChild(tr);
             });
 
             table.querySelectorAll('.ignore-btn').forEach(btn => {
@@ -955,20 +923,21 @@
             btnSettings.style.background = '#222'; btnSettings.style.color = '#aaa';
 
             const table = document.createElement('table');
-            table.style.cssText = tableStyle;
-            table.innerHTML = `<tr><th style="${thStyle}">${htmlT('colLabel')}</th><th style="${thStyle}">${htmlT('colPhrase')}</th><th style="${thStyle}">${htmlT('colAction')}</th></tr>`;
+            table.style.cssText = tableStyle + 'min-width:540px;';
+            table.innerHTML = `<thead><tr><th style="${thStyle}">${htmlT('colLabel')}</th><th style="${thStyle}">${htmlT('colPhrase')}</th><th style="${thStyle}">${htmlT('colAction')}</th></tr></thead>`;
+            const rows = table.createTBody();
 
-            if (muteRules.length === 0) table.innerHTML += `<tr><td colspan="3" style="${tdStyle} text-align:center; color:#888;">${htmlT('emptyRules')}</td></tr>`;
+            if (muteRules.length === 0) rows.innerHTML = `<tr><td colspan="3" style="${tdStyle} text-align:center; color:#888;">${htmlT('emptyRules')}</td></tr>`;
 
             // Фильтры хранятся в порядке добавления: новые строки внизу.
             muteRules.forEach((rule, index) => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td style="${tdStyle}">${rule.label || t('unknown')}</td>
-                    <td style="${tdStyle}">${rule.text}</td>
-                    <td style="${tdStyle}"><button class="del-rule-btn" data-idx="${index}" style="${btnActionStyle}; background:#522;">${htmlT('delBtn')}</button></td>
+                    <td style="${identityCellStyle}">${escapeHtml(rule.label || t('unknown'))}</td>
+                    <td style="${descriptionCellStyle}">${escapeHtml(rule.text)}</td>
+                    <td style="${actionCellStyle}"><button class="del-rule-btn" data-idx="${index}" style="${btnActionStyle}; background:#522;">${htmlT('delBtn')}</button></td>
                 `;
-                table.appendChild(tr);
+                rows.appendChild(tr);
             });
 
             table.querySelectorAll('.del-rule-btn').forEach(btn => {
@@ -1002,8 +971,8 @@
                 <div style="margin:0; padding:0; border:0; background:#222;">
                     <h3 style="margin:0 0 4px; padding:0; border:0; font-size:14px;">${htmlT('langTitle')}</h3>
                     <div style="display:flex; gap:4px; margin:0;">
-                        <button id="langRu" style="${btnActionStyle}; padding:8px 16px; background:${currentLang === 'ru' ? '#1e3a5f' : '#333'};">Русский 🇷🇺</button>
-                        <button id="langUk" style="${btnActionStyle}; padding:8px 16px; background:${currentLang === 'uk' ? '#1e3a5f' : '#333'};">Українська 🇺🇦</button>
+                        <button id="langUk" style="${btnActionStyle}; background:${currentLang === 'uk' ? '#1e3a5f' : '#333'};">Українська 🇺🇦</button>
+                        <button id="langRu" style="${btnActionStyle}; background:${currentLang === 'ru' ? '#1e3a5f' : '#333'};">Русский 🇷🇺</button>
                     </div>
                 </div>
 
@@ -1017,7 +986,7 @@
                         <span id="stdFileName" style="color:#888; font-size:12px; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block; vertical-align:middle;">${htmlT('noFile')}</span>
 
                         <button id="testStd" style="${btnActionStyle}; margin-left:auto;">${htmlT('testBtn')}</button>
-                        ${standardAudioData ? '<span style="color:#0f0; font-size:16px;">✓</span>' : '<span style="color:#f00; font-size:16px;">❌</span>'}
+                        ${standardAudioData ? '<span class="apc-sound-file-status" style="color:#0f0; font-size:16px; line-height:1; padding-right:3px; flex-shrink:0;">✓</span>' : '<span class="apc-sound-file-status" style="color:#f00; font-size:16px; line-height:1; padding-right:3px; flex-shrink:0;">❌</span>'}
                     </div>
                 </div>
 
@@ -1031,7 +1000,7 @@
                         <span id="afkFileName" style="color:#888; font-size:12px; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block; vertical-align:middle;">${htmlT('noFile')}</span>
 
                         <button id="testAfk" style="${btnActionStyle}; margin-left:auto;">${htmlT('testBtn')}</button>
-                        ${afkAudioData ? '<span style="color:#0f0; font-size:16px;">✓</span>' : '<span style="color:#f00; font-size:16px;">❌</span>'}
+                        ${afkAudioData ? '<span class="apc-sound-file-status" style="color:#0f0; font-size:16px; line-height:1; padding-right:3px; flex-shrink:0;">✓</span>' : '<span class="apc-sound-file-status" style="color:#f00; font-size:16px; line-height:1; padding-right:3px; flex-shrink:0;">❌</span>'}
                     </div>
                 </div>
 
@@ -1111,8 +1080,8 @@
         updateDebug();
     }
 
-    btnHist.onclick = () => { activeTab = 'history'; markAllAsRead(); renderModal(); };
-    btnRules.onclick = () => { activeTab = 'rules'; renderModal(); };
+    btnHist.onclick = () => { activeTab = 'history'; markAllAsRead(); renderModal(); modal.scrollTop = modal.scrollHeight; };
+    btnRules.onclick = () => { activeTab = 'rules'; renderModal(); modal.scrollTop = modal.scrollHeight; };
     btnSettings.onclick = () => { activeTab = 'settings'; renderModal(); };
 
     timerBtn.onclick = () => {
@@ -1121,6 +1090,7 @@
             activeTab = 'history';
             markAllAsRead();
             renderModal();
+            modal.scrollTop = modal.scrollHeight;
         } else {
             lastTick = Date.now();
         }

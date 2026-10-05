@@ -45,8 +45,11 @@ async function main() {
             });
             await page.goto(`http://127.0.0.1:${server.address().port}/#deviceGroups`);
             await page.evaluate(storage => {
-                for (const [key, value] of Object.entries(storage)) localStorage.setItem(key, value);
-            }, initialStorage);
+                for (const [key, value] of Object.entries(storage)) {
+                    if (value === null) localStorage.removeItem(key);
+                    else localStorage.setItem(key, value);
+                }
+            }, { spa_lang: 'ru', ...initialStorage });
             await page.addScriptTag({ content: instrumented });
             return page;
         }
@@ -56,7 +59,17 @@ async function main() {
             }, { index, status, payload });
         }
 
+        const fresh = await fixture({ spa_lang: null, spa_i18n_v1_uk: JSON.stringify({ langTitle: 'Язык интерфейса / Мова інтерфейсу' }) });
+        assert.equal(await fresh.evaluate(() => apcLanguageTest.state().currentLang), 'uk');
+        assert.match(await fresh.evaluate(() => languageRequests[0].url), /\/uk\.json\?_/);
+        assert.equal(await fresh.evaluate(() => apcLanguageTest.translate('langTitle')), packs.uk.langTitle);
+        await respond(fresh, 0, 200, { ...packs.uk, langTitle: 'Язык интерфейса / Мова інтерфейсу' });
+        assert.equal(await fresh.evaluate(() => apcLanguageTest.translate('langTitle')), packs.uk.langTitle);
+        await fresh.close();
+        ok('Fresh installs default to Ukrainian and old cache/remote headings keep Ukrainian first');
+
         const page = await fixture();
+        assert.equal(await page.evaluate(() => apcLanguageTest.state().currentLang), 'ru');
         assert.equal(await page.locator('#apc-timer-btn').isVisible(), true);
         assert.equal(await page.evaluate(() => apcLanguageTest.state().backgroundState), 'unavailable');
         const request = await page.evaluate(() => ({ url: languageRequests[0].url, timeout: languageRequests[0].timeout, anonymous: languageRequests[0].anonymous }));
@@ -87,14 +100,14 @@ async function main() {
         assert.equal(await page.locator('#apc-timer-btn').isVisible(), true);
         ok('Saved translations survive reload and a GitHub 404');
 
-        const invalid = await fixture({ spa_i18n_v1_ru: '{bad cache', spa_lang: 'unsupported' });
+        const invalid = await fixture({ spa_i18n_v1_uk: '{bad cache', spa_lang: 'unsupported' });
         await respond(invalid, 0, 200, '<html>Bad gateway</html>');
-        assert.equal(await invalid.evaluate(() => apcLanguageTest.translate('tabSettings')), packs.ru.tabSettings);
-        assert.equal(await invalid.evaluate(() => apcLanguageTest.state().currentLang), 'ru');
-        await invalid.evaluate(() => { void apcLanguageTest.load('ru'); });
+        assert.equal(await invalid.evaluate(() => apcLanguageTest.translate('tabSettings')), packs.uk.tabSettings);
+        assert.equal(await invalid.evaluate(() => apcLanguageTest.state().currentLang), 'uk');
+        await invalid.evaluate(() => { void apcLanguageTest.load('uk'); });
         await respond(invalid, 1, 200, { tabSettings: 15 });
-        assert.equal(await invalid.evaluate(() => apcLanguageTest.translate('tabSettings')), packs.ru.tabSettings);
-        await invalid.evaluate(() => { void apcLanguageTest.load('ru'); });
+        assert.equal(await invalid.evaluate(() => apcLanguageTest.translate('tabSettings')), packs.uk.tabSettings);
+        await invalid.evaluate(() => { void apcLanguageTest.load('uk'); });
         await invalid.evaluate(() => languageRequests[2].ontimeout());
         assert.equal(await invalid.locator('#apc-timer-btn').isVisible(), true);
         ok('Corrupt cache, malformed JSON, invalid types, unsupported locale and timeout keep built-in translations');

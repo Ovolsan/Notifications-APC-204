@@ -218,7 +218,7 @@ async function main() {
         });
         await soundPage.waitForFunction(() => apcTest.state().soundState === 'blocked');
         assert.equal(await soundPage.evaluate(() => localStorage.spa_alarm_sound_pending), 'true');
-        assert.equal(await soundPage.evaluate(() => document.body.textContent.includes('не запустился')), true);
+        assert.equal(await soundPage.evaluate(() => document.body.textContent.includes('не запустився')), true);
         ok('Autoplay rejection is shown and keeps the alarm pending');
 
         await soundPage.reload();
